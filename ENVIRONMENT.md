@@ -83,7 +83,7 @@ Then validate the full path against verl's bundled multi-turn VLM example (geo3k
 
 ## 5. Open items
 
-- **Disk**: `/` has 104 GB free. The env needs ~25–30 GB, Qwen3-VL-4B weights ~9 GB, and the plan reserves 150–200 GB for video. No other volume was found (`/scratch`, `/data`, `/mnt/*` are absent). Either locate a larger mount, or download video in batches and delete as you go.
+- **Disk**: resolved, see `DATA.md` §3. `/` has 89 GB free and is the only volume; the env came in at 12 GB (not 25–30), and the video working set is ~31 GB, not the 150–200 GB the plan reserved. Neither a larger mount nor batched download is needed.
 - **SFT framework**: LLaMA-Factory 0.9.5 requires `transformers <=5.6.0`, whose intersection with verl's range is only 5.5.3/5.5.4 — sharing an env would pin transformers five minors behind. Use verl's built-in FSDP SFT trainer, or give LLaMA-Factory a separate env (~25 GB more disk).
 - **Plan amendment**: `agentic_tvg_plan.md` §2 specifies SGLang as the rollout engine; it must read vLLM 0.24.0. Multi-turn tool calling in verl 0.9.0 lives in `verl/experimental/agent_loop/tool_agent_loop.py` + `verl/tools/`, which is decoupled from the rollout backend, so nothing else in the plan changes.
 
