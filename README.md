@@ -3,7 +3,7 @@
 Agentic temporal video grounding with verifiable rewards: Qwen3-VL-4B +
 verl GRPO with a multi-turn `crop_video` tool, on one A100 80GB.
 
-Docs: `agentic_tvg_plan.md` (design) · `ENVIRONMENT.md` (env `verl`) · `DATA.md` (data)
+Docs: `agentic_tvg_plan.md` (design) · `ENVIRONMENT.md` (env `verl`) · `DATA.md` (data) · `RUNBOOK.md` (how to run everything, in order)
 
 ## Layout
 
