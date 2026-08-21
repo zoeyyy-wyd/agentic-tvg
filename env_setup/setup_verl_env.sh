@@ -7,7 +7,6 @@ set -euo pipefail
 ENV_NAME="${ENV_NAME:-verl}"
 PY_VER="3.12"
 CONDA_SH="/opt/miniconda3/etc/profile.d/conda.sh"
-VERL_SRC="${VERL_SRC:-$HOME/src/verl}"
 
 TORCH_VER="2.11.0"
 TV_VER="0.26.0"
@@ -72,14 +71,17 @@ log "Installing verl runtime dependencies (requirements.txt)"
 pip install -r "$(dirname "$0")/../requirements.txt"
 
 # ---------------------------------------------------------------- 5. verl itself
-log "Installing verl v0.9.0 (from source, --no-deps)"
-if [[ ! -d "$VERL_SRC" ]]; then
-  mkdir -p "$(dirname "$VERL_SRC")"
-  git clone --branch v0.9.0 --depth 1 https://github.com/volcengine/verl.git "$VERL_SRC"
-fi
-pip install --no-deps -e "$VERL_SRC"
+log "Installing verl 0.9.0 (--no-deps is mandatory: a plain install re-resolves deps and can replace torch/vllm)"
+pip install --no-deps "verl==0.9.0"
 
-# ---------------------------------------------------------------- 6. verification
+# ---------------------------------------------------------------- 6. project package
+# The project's own library must be importable by verl's ray workers
+# (tool class in crop_video_tool.yaml, custom reward file, custom SFT dataset),
+# so install it editable: changes to agentic_tvg/ take effect without reinstall.
+log "Installing agentic-tvg (editable, --no-deps: never re-resolve torch/vllm)"
+pip install --no-deps -e "$(dirname "$0")/.."
+
+# ---------------------------------------------------------------- 7. verification
 log "Verifying"
 python "$(dirname "$0")/check_env.py"
 

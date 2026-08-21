@@ -150,3 +150,41 @@ Supersedes `agentic_tvg_plan.md`:
 - **§4.1** excludes "LongVT's 220K non-tool CoT items". Concretely those are the `longvideoreason` / `longvideoreflection` / `videor1` / `geminicot` / `llavacot` groups, 1047 GiB of the 1116.
 
 `ENVIRONMENT.md` §5's disk open item ("locate a larger mount, or download in batches and delete as you go") is resolved — neither is needed.
+
+---
+
+## 8. Resolutions (2026-08-20, after download + inspection)
+
+### 8.1 §6.1 resolved — RL split carries span GT after all
+
+`longvt_rl_selfqa_1k6` / `longvt_rl_val_114` have `reward_model.ground_truth`
+as free text (style="model") — but **every** row carries
+`extra_info.video_segment = [start, end]`, the QA evidence window. 1668/1668
+and 114/114 rows validated against the actual videos with zero drops.
+`data_prep/extract_rl.py` recasts each row as grounding (query := question,
+GT := video_segment) -> `data/processed/rl_train.parquet` (1668) and
+`rl_val.parquet` (114). Durations: train 149–301 s (median 205), val
+150–301 s (median 218). §6.2 is therefore moot — RL data does not touch the
+`tvg` items, and both Step-0-decision branches keep all 6,395 traces for SFT.
+
+### 8.2 The tvg split is not long-video
+
+All 6,395 SFT traces are `tvg_charades_cot_*`. The "eval (long) held-out off
+`tvg`" row in §2 is wrong — the long-video eval role is served by
+`longvt_rl_val_114` instead (150–301 s videos, disjoint from training).
+
+### 8.3 tvg archive contents
+
+Flat directory: 2,454 mp4 (1,859 with 5-char Charades ids, 595 others) plus
+60,616 pre-cropped trace frames named `{vid}_{start}_{end}_{idx}.jpg`. Two
+consequences for `render_traces.py` (SFT stage): tool-response frames can be
+re-used from these jpgs without decoding, and the 1,859 Charades ids must be
+checked for overlap against the Charades-STA **test** ids once
+`charades_sta_test.txt` is in — any intersection is eval contamination and
+also decides whether `Charades_v1_480.zip` (~13 GB) still needs downloading.
+
+### 8.4 §6.3 partially resolved
+
+qwen-vl-utils now decodes through torchcodec (seek-based, ENVIRONMENT.md §7),
+which removes the full-file-read worst case for the *global* view. The crop
+tool decodes with PyAV seek+scan; measure during Step 0 as planned.

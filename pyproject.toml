@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-tvg"
+version = "0.1.0"
+description = "Agentic temporal video grounding with verifiable rewards (Qwen3-VL + verl)"
+requires-python = ">=3.10"
+# Runtime dependencies are managed by the `verl` conda env (see ENVIRONMENT.md);
+# keep this empty so `pip install -e .` never re-resolves torch/vllm/verl.
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["agentic_tvg*"]
