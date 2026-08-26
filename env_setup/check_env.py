@@ -69,10 +69,41 @@ def verl_check():
 
 
 def video_check():
-    import av  # noqa: F401
-    from qwen_vl_utils import process_vision_info  # noqa: F401
+    """Decode for real -- ENVIRONMENT.md 7.
 
-    return f"qwen-vl-utils {md.version('qwen-vl-utils')} | PyAV {md.version('av')}"
+    Import alone proves nothing: torchcodec imports fine and only fails when it
+    dlopens its ffmpeg core, so a smoke decode is the only honest check. Also
+    asserts qwen-vl-utils picked torchcodec: falling through to torchvision is
+    silent here but fatal later (torchvision 0.26 removed io.read_video).
+    """
+    import os
+    import tempfile
+
+    import av
+    import numpy as np
+    from qwen_vl_utils import process_vision_info  # noqa: F401
+    from qwen_vl_utils.vision_process import get_video_reader_backend
+    from torchcodec.decoders import VideoDecoder
+
+    backend = get_video_reader_backend()
+    assert backend == "torchcodec", f"qwen-vl-utils picked {backend!r}, not torchcodec"
+
+    with tempfile.TemporaryDirectory() as td:
+        path = os.path.join(td, "probe.mp4")
+        with av.open(path, mode="w") as out:
+            stream = out.add_stream("libx264", rate=10)
+            stream.width, stream.height, stream.pix_fmt = 64, 64, "yuv420p"
+            for i in range(10):
+                plane = np.full((64, 64, 3), i * 25, dtype=np.uint8)
+                out.mux(stream.encode(av.VideoFrame.from_ndarray(plane, format="rgb24")))
+            out.mux(stream.encode(None))
+        frame = VideoDecoder(path)[0]          # <- the dlopen happens here
+    assert frame.shape == (3, 64, 64), frame.shape
+
+    preload = os.environ.get("LD_PRELOAD", "")
+    assert "libstdc++" in preload, f"LD_PRELOAD missing libstdc++ (got {preload!r})"
+    return (f"qwen-vl-utils {md.version('qwen-vl-utils')} | torchcodec "
+            f"{md.version('torchcodec')} decode ok | PyAV {md.version('av')}")
 
 
 def misc_check():

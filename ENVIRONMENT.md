@@ -20,7 +20,8 @@ Machine: A100 80GB PCIe, **sm80** | driver 610.43.02 / CUDA UMD 13.3 | nvcc 13.3
 | tensordict | 0.10.0 |
 | ray[default] | >=2.41.0 |
 | flashinfer-python / -cubin | 0.6.12 (pulled in by vllm) |
-| qwen-vl-utils | 0.0.14 (uses PyAV; decord not needed) |
+| qwen-vl-utils | 0.0.14 (video backend = torchcodec, see §7) |
+| torchcodec | 0.16.0 (mandatory; needs the §7 LD_PRELOAD) |
 | ffmpeg | via conda-forge |
 | numpy / pyarrow | >=2.0.0 / >=19.0.0 |
 
@@ -38,7 +39,7 @@ Binding constraints, in the order they force each other:
 
 ```bash
 conda env remove -n verl        # the existing env is an empty stub (24K, no bin/)
-bash scripts/setup_verl_env.sh
+bash env_setup/setup_verl_env.sh
 ```
 
 The script's ordering is load-bearing:
@@ -49,7 +50,10 @@ The script's ordering is load-bearing:
 4. Install flash-attn — prebuilt wheel first, source build as fallback (see §3).
 5. `pip install -r requirements.txt` — transformers and the rest of verl's dependencies, **after** vllm. vllm's `transformers>=5.5.3` is a lower bound only, so nothing gets clobbered. Everything pip can install normally lives in `requirements.txt`; torch, vllm, flash-attn and verl cannot (per-package index, conditional fallback, `--no-deps`) and stay in the script.
 6. `pip install --no-deps verl==0.9.0` — **`--no-deps` is mandatory**; without it pip re-resolves and can replace torch/vllm. (If verl internals ever need patching, switch to a `git clone -b v0.9.0` + `pip install --no-deps -e` editable install.)
-7. Run the verification script.
+7. `conda env config vars set LD_PRELOAD=...libstdc++.so.6` — required for
+   torchcodec to decode anything (§7). The script also exports it inline so
+   step 8 sees it without a reactivate.
+8. Run the verification script.
 
 ---
 
@@ -72,10 +76,11 @@ The setup script tries the wheel and falls back automatically.
 
 ```bash
 conda activate verl
-python scripts/check_env.py
+python env_setup/check_env.py
 ```
 
-Checks torch CUDA + sm80 detection, a real flash-attn bf16 forward pass, vllm version, `Qwen3VLForConditionalGeneration` import, verl's `qwen3_vl` patch / `ToolAgentLoop` / tool registry, and ray/tensordict/pyarrow/numpy bounds.
+Checks torch CUDA + sm80 detection, a real flash-attn bf16 forward pass, vllm version, `Qwen3VLForConditionalGeneration` import, verl's `qwen3_vl` patch / `ToolAgentLoop` / tool registry, ray/tensordict/pyarrow/numpy bounds,
+and a real torchcodec decode of a synthetic clip + the `LD_PRELOAD` / backend-selection asserts (§7).
 
 Then validate the full path against verl's bundled multi-turn VLM example (geo3k agent-loop) before touching project code.
 
@@ -83,9 +88,9 @@ Then validate the full path against verl's bundled multi-turn VLM example (geo3k
 
 ## 5. Open items
 
-- **Disk**: resolved, see `DATA.md` §3. `/` has 89 GB free and is the only volume; the env came in at 12 GB (not 25–30), and the video working set is ~31 GB, not the 150–200 GB the plan reserved. Neither a larger mount nor batched download is needed.
+- **Disk**: resolved, see `DATA.md` §5. `/` has 89 GB free and is the only volume; the env came in at 12 GB (not 25–30), and the video working set is ~31 GB, not the 150–200 GB the plan reserved. Neither a larger mount nor batched download is needed.
 - **SFT framework**: LLaMA-Factory 0.9.5 requires `transformers <=5.6.0`, whose intersection with verl's range is only 5.5.3/5.5.4 — sharing an env would pin transformers five minors behind. Use verl's built-in FSDP SFT trainer, or give LLaMA-Factory a separate env (~25 GB more disk).
-- **Plan amendment**: `agentic_tvg_plan.md` §2 specifies SGLang as the rollout engine; it must read vLLM 0.24.0. Multi-turn tool calling in verl 0.9.0 lives in `verl/experimental/agent_loop/tool_agent_loop.py` + `verl/tools/`, which is decoupled from the rollout backend, so nothing else in the plan changes.
+- **Rollout engine**: the original plan specified SGLang; the working choice is vLLM 0.24.0. Multi-turn tool calling in verl 0.9.0 lives in `verl/experimental/agent_loop/tool_agent_loop.py` + `verl/tools/`, which is decoupled from the rollout backend, so nothing else in the plan changes.
 
 ---
 
@@ -104,14 +109,23 @@ neither of the first two installed it falls through to torchvision — whose
 `io.read_video` was **removed** in torchvision 0.26, so every video load in
 verl's RLHFDataset/agent-loop path crashes.
 
-Fix in place (both parts required):
+Fix, both parts required and both now automated by
+`env_setup/setup_verl_env.sh` (torchcodec in `requirements.txt` step 4,
+LD_PRELOAD in step 7):
 
-1. `pip install torchcodec` (now in `requirements.txt`). decord is not an
-   option: no Python 3.12 wheels.
-2. `conda env config vars set LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6`
-   (already set on this env). torchcodec's ffmpeg-8 core links the conda
-   ffmpeg, whose libopenvino needs `CXXABI_1.3.15`; without the preload the
-   process binds the system gcc-11 libstdc++ first and the dlopen fails.
+1. `pip install torchcodec` — decord is not an option: no Python 3.12 wheels.
+2. `conda env config vars set LD_PRELOAD=$CONDA_PREFIX/lib/libstdc++.so.6`.
+   torchcodec dlopens the core matching the installed ffmpeg major (conda-forge
+   ffmpeg 8.0.1 -> `libtorchcodec_core8.so`), which pulls in the conda ffmpeg's
+   libopenvino and needs `CXXABI_1.3.15`; without the preload the process binds
+   the system gcc-11 libstdc++ first and the dlopen fails with
+
+       OSError: /lib/x86_64-linux-gnu/libstdc++.so.6: version `CXXABI_1.3.15'
+       not found (required by .../libopenvino.so.2541)
+
+   **The failure is lazy**: `import torchcodec` succeeds without the preload;
+   only the first actual decode raises. `check_env.py`'s `video stack` check
+   therefore does a real synthetic-video decode, not an import.
    libstdc++ is strictly backward compatible, so preloading the newer one is
    safe — verified torch 2.11 CUDA + vllm 0.24 still import and see the GPU.
 

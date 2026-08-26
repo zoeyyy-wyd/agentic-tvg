@@ -1,30 +1,34 @@
 #!/usr/bin/env python
-"""Re-render LongVT SFT traces to the Qwen3-VL / verl multi-turn format (plan §4.2).
+"""Build the QA SFT set from LongVT selftrace (+ optional geminicot mix).
 
-Input: ``longvt_sft_tvg_6k3.parquet`` — 6,395 traces, each exactly 5 messages
-with one crop_video call, stored in Qwen2.5-VL-era formatting:
-role=user tool responses wrapped in literal ``<tool_response>`` text, a tool
-schema carrying a model-supplied ``video_path``, and pre-cropped jpg frames.
+Derivation (session 2026-08-25; supersedes the pure-TVG SFT for the QA pivot):
 
-Output rows for verl's MultiTurnSFTDataset (messages/images/videos/tools
-columns), re-rendered so every surface detail matches what our RL rollout
-produces (verified against the Qwen3-VL chat template and ToolAgentLoop):
+  selftrace 15,354 traces = LongVT's stage-3 RFT data: their model's successful
+  RL rollouts (answer judged correct AND crop-vs-evidence IoU >= 0.3) over the
+  selfqa questions. Only 1,290 unique (video, question) pairs; median 7
+  duplicate solutions each.
 
-- system/user turns rebuilt from agentic_tvg.prompts (same as RL data);
-  user turn carries the ``<video>`` placeholder -> global 32-frame budget
-- assistant tool call: original <think> kept, tool-call block normalized to
-  the template's canonical form (json.dumps spacing, no video_path arg)
-- tool turn: ``role="tool"`` with <image> placeholders + the exact wording of
-  CropVideoTool (crop_response_text) — the template itself adds
-  <tool_response> wrappers, so the literal ones from LongVT are dropped
-- frames capped at CROP_NUM_FRAMES (uniform subsample, numeric-index order),
-  each image entry budgeted with CROP_MAX_PIXELS/CROP_MIN_PIXELS
+  Join selftrace <-> selfqa on exact question text, then allocate by answer
+  verifiability (normalized GT word count <= --max-gt-words):
+    - joined & unverifiable        -> SFT (RL's matcher can't score them)
+    - joined & verifiable          -> sample (weight 1/n_traces, favoring the
+      questions their model rarely solved) until --sft-questions; rest -> RL
+    - selfqa-only & verifiable     -> RL
+    - selfqa-only & unverifiable   -> dropped (no traces, no verifiable reward)
+    - selftrace-only (videos absent from selfqa_1.zip) -> dropped
+
+  Every surface detail is re-rendered to match our RL rollout byte-for-byte
+  (same rationale as the TVG renderer, render_tvg_traces.py): prompts rebuilt from agentic_tvg.prompts
+  (QA mode), tool_call canonicalized (no video_path), tool-response frames
+  re-decoded from the local mp4 via agentic_tvg.video_frames (their jpgs live
+  in archives we do not download), val split by video id.
+
+Outputs: allocation.json (always; consumed by extract_rl.py),
+sft_train.parquet / sft_val.parquet + frames/*.jpg (unless --plan-only).
 
 Usage:
-    python data_prep/render_traces.py \
-        --traces data/annotations/longvt_sft_tvg_6k3.parquet \
-        --video-root data/videos/tvg --out data/processed \
-        [--exclude-ids contaminated_ids.txt] [--limit 2000 --seed 0]
+    python data_prep/render_traces.py --plan-only     # selection stats only
+    python data_prep/render_traces.py                 # full render
 """
 
 from __future__ import annotations
@@ -33,6 +37,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -47,39 +52,42 @@ from agentic_tvg.constants import (  # noqa: E402
     GLOBAL_MIN_PIXELS,
     GLOBAL_NUM_FRAMES,
 )
-from agentic_tvg.prompts import build_system_prompt, build_user_prompt  # noqa: E402
-from agentic_tvg.span import parse_answer_span  # noqa: E402
 from agentic_tvg.crop_video_tool import build_crop_video_schema, crop_response_text  # noqa: E402
-from agentic_tvg.video_frames import get_video_duration  # noqa: E402
+from agentic_tvg.prompts import build_system_prompt_qa, build_user_prompt_qa  # noqa: E402
+from agentic_tvg.video_frames import get_video_duration, sample_frames  # noqa: E402
 
-QUERY_RE = re.compile(r"find the time range of this event\s*:\s*(.+?)\s*\.?\s*Return the time range", re.IGNORECASE | re.DOTALL)
+VID_RE = re.compile(r"([A-Za-z0-9_\-]+\.mp4)")
 TOOL_CALL_RE = re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", re.DOTALL)
-JPG_IDX_RE = re.compile(r"_(\d+)\.jpg$")
+ANSWER_RE = re.compile(r"<answer>(.*?)</answer>", re.DOTALL)
+_ARTICLES = re.compile(r"\b(a|an|the)\b")
+
+
+def norm_answer(s: str) -> str:
+    s = re.sub(r"[^a-z0-9\s]", " ", s.lower())
+    return " ".join(_ARTICLES.sub(" ", s).split())
 
 
 def msg_text(msg) -> str:
-    """Concatenate the text segments of a LongVT message."""
     c = msg["content"]
     if isinstance(c, str):
         return c
-    return "".join(seg["text"] for seg in c if seg.get("text") is not None)
+    return "".join(seg.get("text") or "" for seg in c if isinstance(seg, dict))
 
 
-def msg_images(msg) -> list[str]:
-    c = msg["content"]
-    if isinstance(c, str):
-        return []
-    urls = [seg["image_url"]["url"] for seg in c if seg.get("image_url") is not None and seg["image_url"].get("url")]
-    # LongVT stores them in string order (0, 1, 10, 11, ...) — re-sort numerically
-    return sorted(urls, key=lambda u: int(JPG_IDX_RE.search(u).group(1)) if JPG_IDX_RE.search(u) else 0)
-
-
-def parse_trace(msgs) -> dict | None:
-    """Extract (query, think1, window, jpgs, final) from one 5-message trace."""
-    if len(msgs) != 5 or [m["role"] for m in msgs] != ["system", "user", "assistant", "user", "assistant"]:
+def parse_trace(msgs, source: str) -> dict | None:
+    """(question, vid, think1, window, final) from one 5-message trace."""
+    if len(msgs) != 5:
         return None
-    qm = QUERY_RE.search(msg_text(msgs[1]))
-    if not qm:
+    u = msg_text(msgs[1])
+    m = VID_RE.search(u)
+    if not m:
+        return None
+    vid = m.group(1)
+    if source == "selftrace":
+        question = u.split("Think first")[0].replace("<video>", "").strip()
+    else:  # geminicot: bare question + "The video path for this video is X.mp4"
+        question = re.split(r"The [Vv]ideo path", u)[0].replace("<video>", "").strip()
+    if not question:
         return None
     a1 = msg_text(msgs[2])
     tc = TOOL_CALL_RE.search(a1)
@@ -94,20 +102,11 @@ def parse_trace(msgs) -> dict | None:
     if not (think1.startswith("<think>") and think1.endswith("</think>")):
         return None
     final = msg_text(msgs[4]).strip()
-    parsed = parse_answer_span(final)
-    if not (parsed.format_ok and parsed.valid):
+    ans = ANSWER_RE.findall(final)
+    if len(ans) != 1 or not final.endswith("</answer>") or not final.startswith("<think>"):
         return None
-    jpgs = msg_images(msgs[3])
-    if not jpgs:
-        return None
-    return {"query": qm.group(1).strip(), "think1": think1, "window": (start, end), "jpgs": jpgs, "final": final, "gt": parsed.span}
-
-
-def subsample(jpgs: list[str], k: int) -> list[str]:
-    if len(jpgs) <= k:
-        return jpgs
-    idx = np.unique(np.linspace(0, len(jpgs) - 1, k).round().astype(int))
-    return [jpgs[i] for i in idx]
+    return {"question": question, "vid": vid, "think1": think1, "window": (start, end),
+            "final": final, "answer": ans[0].strip()}
 
 
 def canonical_tool_call(start: float, end: float) -> str:
@@ -116,104 +115,206 @@ def canonical_tool_call(start: float, end: float) -> str:
     return f"<tool_call>\n{payload}\n</tool_call>"
 
 
-def render(rec: dict, video_path: str, duration: float, jpg_dir: Path) -> dict | None:
-    start, end = rec["window"]
-    jpgs = [jpg_dir / j for j in subsample(rec["jpgs"], CROP_NUM_FRAMES)]
-    if any(not p.exists() for p in jpgs):
-        return None
-    timestamps = [round(t, 2) for t in np.linspace(start, end, len(jpgs))]
+def pick_traces(traces: list[dict], k: int) -> list[int]:
+    """Indices of up to k traces, preferring distinct answers (diversity)."""
+    by_ans: dict[str, list[int]] = {}
+    for i, t in enumerate(traces):
+        by_ans.setdefault(norm_answer(t["answer"]), []).append(i)
+    picked, rounds = [], 0
+    while len(picked) < k and rounds < k:
+        for idxs in by_ans.values():
+            if rounds < len(idxs) and len(picked) < k:
+                picked.append(idxs[rounds])
+        rounds += 1
+    return sorted(picked)
 
+
+def render_row(question, vid, think1, window, final, video_path, duration,
+               frames_dir: Path, source: str, extra: dict) -> dict | None:
+    start = max(0.0, min(window[0], duration - 0.5))
+    end = min(window[1], duration)
+    if end - start < 0.5:
+        return None
+    frames, timestamps = sample_frames(str(video_path), start, end, CROP_NUM_FRAMES,
+                                       CROP_MAX_PIXELS, CROP_MIN_PIXELS)
+    stem = Path(vid).stem
+    paths = []
+    for i, fr in enumerate(frames):
+        p = frames_dir / f"{stem}_{start:.1f}_{end:.1f}_{i}.jpg"
+        if not p.exists():
+            fr.save(p, quality=90)
+        paths.append(str(p.resolve()))
     messages = [
-        {"role": "system", "content": build_system_prompt("tool_optional")},
-        {"role": "user", "content": build_user_prompt(rec["query"], duration)},
-        {"role": "assistant", "content": rec["think1"] + "\n" + canonical_tool_call(start, end)},
-        {"role": "tool", "content": "<image>" * len(jpgs) + crop_response_text(start, end, timestamps)},
-        {"role": "assistant", "content": rec["final"]},
+        {"role": "system", "content": build_system_prompt_qa("tool_optional")},
+        {"role": "user", "content": build_user_prompt_qa(question, duration)},
+        {"role": "assistant", "content": think1 + "\n" + canonical_tool_call(start, end)},
+        {"role": "tool", "content": "<image>" * len(paths)
+         + crop_response_text(start, end, [round(t, 2) for t in timestamps])},
+        {"role": "assistant", "content": final},
     ]
     return {
         "messages": messages,
-        "images": [
-            {"image": str(p), "max_pixels": CROP_MAX_PIXELS, "min_pixels": CROP_MIN_PIXELS} for p in jpgs
-        ],
-        "videos": [
-            {"video": video_path, "nframes": GLOBAL_NUM_FRAMES, "max_pixels": GLOBAL_MAX_PIXELS, "min_pixels": GLOBAL_MIN_PIXELS}
-        ],
+        "images": [{"image": p, "max_pixels": CROP_MAX_PIXELS, "min_pixels": CROP_MIN_PIXELS} for p in paths],
+        "videos": [{"video": str(video_path.resolve()), "nframes": GLOBAL_NUM_FRAMES,
+                    "max_pixels": GLOBAL_MAX_PIXELS, "min_pixels": GLOBAL_MIN_PIXELS}],
         "tools": [build_crop_video_schema().model_dump(exclude_unset=True, exclude_none=True)],
-        "extra_info": {
-            "query": rec["query"],
-            "gt": list(rec["gt"]),
-            "tool_window": [start, end],
-            "duration": duration,
-            "n_frames_orig": len(rec["jpgs"]),
-        },
+        "extra_info": {"question": question, "video_id": vid, "source": source,
+                       "tool_window": [start, end], "duration": duration, **extra},
     }
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--traces", type=Path, default=Path("data/annotations/longvt_sft_tvg_6k3.parquet"))
-    ap.add_argument("--video-root", type=Path, default=Path("data/videos/tvg"))
+    ap.add_argument("--selftrace", type=Path, default=Path("data/annotations/longvt_rft_selftrace_15k3.parquet"))
+    ap.add_argument("--selfqa", type=Path, default=Path("data/annotations/longvt_rl_selfqa_1k6.parquet"))
+    ap.add_argument("--geminicot", type=Path, default=Path("data/annotations/longvt_sft_geminicot_4k8.parquet"))
+    ap.add_argument("--selfqa-video-root", type=Path, default=Path("data/videos/selfqa"))
+    ap.add_argument("--geminicot-video-root", type=Path, default=Path("data/videos/geminicot"))
     ap.add_argument("--out", type=Path, default=Path("data/processed"))
-    ap.add_argument("--exclude-ids", type=Path, default=None, help="file with one video id per line to drop (contamination)")
-    ap.add_argument("--limit", type=int, default=None, help="subsample N traces (the SFT-dose knob)")
-    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--sft-questions", type=int, default=600, help="selftrace questions allocated to SFT")
+    ap.add_argument("--traces-per-q", type=int, default=3)
+    ap.add_argument("--geminicot-n", type=int, default=600, help="geminicot traces mixed in (0 = pure selftrace)")
+    ap.add_argument("--max-gt-words", type=int, default=6, help="normalized GT length cap for 'verifiable'")
     ap.add_argument("--val-frac", type=float, default=0.02)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--plan-only", action="store_true", help="selection + allocation.json, no rendering")
     args = ap.parse_args()
+    rng = np.random.default_rng(args.seed)
 
-    excluded = set()
-    if args.exclude_ids and args.exclude_ids.exists():
-        excluded = {l.strip() for l in args.exclude_ids.read_text().splitlines() if l.strip()}
-        print(f"excluding {len(excluded)} video ids from {args.exclude_ids}")
+    # ---- selfqa: question -> (gt, video, segment) --------------------------
+    sq = pd.read_parquet(args.selfqa)
+    qa: dict[str, dict] = {}
+    for _, r in sq.iterrows():
+        ei = dict(r["extra_info"])
+        seg = ei.get("video_segment")
+        vids = r["videos"]
+        vid = VID_RE.search(str(list(vids) if not isinstance(vids, str) else vids))
+        qa[ei["question"].strip()] = {
+            "gt": dict(r["reward_model"])["ground_truth"].strip(),
+            "vid": vid.group(1) if vid else None,
+            "segment": [float(seg[0]), float(seg[1])] if seg is not None else None,
+        }
 
-    df = pd.read_parquet(args.traces)
-    if args.limit and args.limit < len(df):
-        df = df.sample(n=args.limit, random_state=args.seed).sort_index()
+    # ---- selftrace: question -> traces ------------------------------------
+    st = pd.read_parquet(args.selftrace)
+    traces: dict[str, list[dict]] = {}
+    bad_parse = 0
+    for _, r in st.iterrows():
+        t = parse_trace(r["messages"], "selftrace")
+        if t is None:
+            bad_parse += 1
+            continue
+        traces.setdefault(t["question"], []).append(t)
 
+    joined = sorted(set(traces) & set(qa))
+    selftrace_only = sorted(set(traces) - set(qa))
+    selfqa_only = sorted(set(qa) - set(traces))
+    verif = {q for q in qa if len(norm_answer(qa[q]["gt"]).split()) <= args.max_gt_words}
+
+    # ---- allocation --------------------------------------------------------
+    forced_sft = [q for q in joined if q not in verif]
+    contested = [q for q in joined if q in verif]
+    need = max(0, args.sft_questions - len(forced_sft))
+    w = np.array([1.0 / len(traces[q]) for q in contested])
+    sampled = list(rng.choice(contested, size=min(need, len(contested)),
+                              replace=False, p=w / w.sum())) if need else []
+    sft_qs = forced_sft + sampled
+    rl_qs = sorted((set(contested) - set(sampled)) | (set(selfqa_only) & verif))
+    dropped_unverif = sorted(set(selfqa_only) - verif)
+
+    plan = {
+        "config": vars(args) | {k: str(v) for k, v in vars(args).items() if isinstance(v, Path)},
+        "sft_selftrace": [
+            {"question": q, "vid": qa[q]["vid"], "gt": qa[q]["gt"], "segment": qa[q]["segment"],
+             "n_traces": len(traces[q]), "picked": pick_traces(traces[q], args.traces_per_q)}
+            for q in sft_qs
+        ],
+        "rl": [{"question": q, "vid": qa[q]["vid"], "gt": qa[q]["gt"], "segment": qa[q]["segment"]}
+               for q in rl_qs],
+        "dropped": {"selftrace_only_questions": len(selftrace_only),
+                    "selfqa_unverifiable_no_traces": len(dropped_unverif),
+                    "selftrace_bad_parse": bad_parse},
+    }
+
+    # ---- geminicot mix -----------------------------------------------------
+    gem_items = []
+    if args.geminicot_n > 0:
+        gm = pd.read_parquet(args.geminicot)
+        pool = []
+        for i, r in gm.iterrows():
+            t = parse_trace(r["messages"], "geminicot")
+            if t is not None:
+                pool.append(t)
+        take = rng.choice(len(pool), size=min(args.geminicot_n, len(pool)), replace=False)
+        gem_items = [pool[i] for i in sorted(take)]
+        plan["sft_geminicot"] = [{"question": t["question"], "vid": t["vid"]} for t in gem_items]
+        plan["dropped"]["geminicot_bad_parse"] = len(gm) - len(pool)
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "allocation.json").write_text(json.dumps(plan, indent=1, ensure_ascii=False))
+
+    n_sft_traces = sum(len(x["picked"]) for x in plan["sft_selftrace"])
+    print(f"selftrace: joined {len(joined)} | selftrace-only {len(selftrace_only)} (dropped) | bad-parse {bad_parse}")
+    print(f"SFT: {len(forced_sft)} forced(unverifiable) + {len(sampled)} sampled = {len(sft_qs)} questions "
+          f"-> {n_sft_traces} traces | + geminicot {len(gem_items)}")
+    print(f"RL : {len(rl_qs)} verifiable questions | dropped unverifiable-no-trace {len(dropped_unverif)}")
+    print(f"-> {args.out}/allocation.json")
+    if args.plan_only:
+        return
+
+    # ---- render ------------------------------------------------------------
+    frames_dir = args.out / "frames"
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    rows, drop = [], Counter()
     durations: dict[str, float] = {}
-    rows, dropped = [], {"parse": 0, "excluded": 0, "missing_video": 0, "bad_duration": 0, "missing_jpg": 0, "gt_out_of_range": 0}
-    for _, r in df.iterrows():
-        rec = parse_trace(r["messages"])
-        if rec is None:
-            dropped["parse"] += 1
-            continue
-        vid = Path(rec["jpgs"][0]).name.rsplit("_", 3)[0]  # XNT6F_8.6_13.2_0.jpg -> XNT6F
-        if vid in excluded:
-            dropped["excluded"] += 1
-            continue
-        video_path = args.video_root / f"{vid}.mp4"
-        if not video_path.exists():
-            dropped["missing_video"] += 1
-            continue
-        if vid not in durations:
+
+    def duration_of(path: Path) -> float:
+        key = str(path)
+        if key not in durations:
             try:
-                durations[vid] = get_video_duration(str(video_path))
+                durations[key] = get_video_duration(key)
             except Exception:
-                durations[vid] = -1.0
-        if durations[vid] <= 0:
-            dropped["bad_duration"] += 1
+                durations[key] = -1.0
+        return durations[key]
+
+    jobs = []
+    for item in plan["sft_selftrace"]:
+        q = item["question"]
+        for i in item["picked"]:
+            t = traces[q][i]
+            jobs.append((t, args.selfqa_video_root / t["vid"], "selftrace",
+                         {"gt": item["gt"], "video_segment": item["segment"]}))
+    for t in gem_items:
+        jobs.append((t, args.geminicot_video_root / t["vid"], "geminicot",
+                     {"gt": None, "video_segment": None}))
+
+    for t, vpath, source, extra in jobs:
+        if not vpath.exists():
+            drop["missing_video"] += 1
             continue
-        if rec["gt"][1] > durations[vid] + 1.0 or rec["gt"][0] >= durations[vid]:
-            dropped["gt_out_of_range"] += 1
+        dur = duration_of(vpath)
+        if dur <= 0:
+            drop["bad_duration"] += 1
             continue
-        row = render(rec, str(video_path.resolve()), durations[vid], args.video_root)
+        try:
+            row = render_row(t["question"], t["vid"], t["think1"], t["window"],
+                             t["final"], vpath, dur, frames_dir, source, extra)
+        except Exception:
+            drop["decode_error"] += 1
+            continue
         if row is None:
-            dropped["missing_jpg"] += 1
+            drop["bad_window"] += 1
             continue
-        row["extra_info"]["video_id"] = vid
         rows.append(row)
 
-    # split by video id so no video straddles train/val
-    rng = np.random.default_rng(args.seed)
-    vids = sorted({row["extra_info"]["video_id"] for row in rows})
+    vids = sorted({r["extra_info"]["video_id"] for r in rows})
     val_vids = set(rng.choice(vids, size=max(1, int(len(vids) * args.val_frac)), replace=False))
     train = [r for r in rows if r["extra_info"]["video_id"] not in val_vids]
     val = [r for r in rows if r["extra_info"]["video_id"] in val_vids]
-
-    args.out.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(train).to_parquet(args.out / "sft_train.parquet")
     pd.DataFrame(val).to_parquet(args.out / "sft_val.parquet")
-    print(f"kept {len(rows)}/{len(df)} (train {len(train)} / val {len(val)}), dropped {dropped}")
-    print(f"-> {args.out}/sft_train.parquet, sft_val.parquet")
+    print(f"rendered {len(rows)}/{len(jobs)} (train {len(train)} / val {len(val)}), dropped {dict(drop)}")
+    print(f"-> {args.out}/sft_train.parquet, sft_val.parquet, frames/ ({len(list(frames_dir.iterdir()))} jpgs)")
 
 
 if __name__ == "__main__":

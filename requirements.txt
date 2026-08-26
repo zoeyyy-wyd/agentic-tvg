@@ -1,5 +1,5 @@
 # Agentic-TVG runtime dependencies (conda env `verl`).
-# Installed by scripts/setup_verl_env.sh step 4. Rationale for the pins: ENVIRONMENT.md
+# Installed by env_setup/setup_verl_env.sh step 4. Rationale for the pins: ENVIRONMENT.md
 #
 # NOT listed here, because pip's requirements format cannot express what they need
 # (see ENVIRONMENT.md §2); the setup script installs them in order, before this file:
@@ -12,7 +12,10 @@
 # --- hard pins: bounded by verl 0.9.0 / vllm 0.24.0 -----------------------
 transformers==5.10.4          # verl: >=5.5.3, <5.11, !=5.6.0
 tensordict==0.10.0            # verl: >=0.8.0, <=0.10.0, !=0.9.0
-qwen-vl-utils==0.0.14         # vision preprocessing; uses PyAV, no decord needed
+qwen-vl-utils==0.0.14         # vision preprocessing; video backend priority torchcodec > decord > torchvision
+torchcodec                    # MANDATORY (ENVIRONMENT.md 7): decord has no py3.12 wheel and
+                              # torchvision 0.26 removed io.read_video -> without this every
+                              # video load crashes. Needs the LD_PRELOAD fix, see setup step 7.
 
 # --- lower bounds required by verl ---------------------------------------
 ray[default]>=2.41.0
@@ -40,5 +43,6 @@ mathruler                     # [geo]
 math-verify                   # [math]
 
 # --- test tooling ---------------------------------------------------------
+matplotlib                    # plot_metrics.py (training curves)
 pytest
 pytest-asyncio

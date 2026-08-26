@@ -1,0 +1,226 @@
+# Agentic Video QA — Project Plan
+
+**Multi-turn tool-calling video QA with verifiable rewards: Qwen3-VL-4B + verl
+GRPO on one A100 80GB**
+
+v2.1 | 2026-08-26 | Status: data pipeline built and verified; SFT ready to launch.
+
+Supersedes the original pure-TVG plan (v1.0). The TVG line was removed
+entirely on 2026-08-26; git history keeps its artifacts. Every number in
+this document was measured against the released data on 2026-08-25/26; nothing
+is transcribed from the paper.
+
+---
+
+## 1. Positioning
+
+Port the long-video agentic QA pipeline of LongVT (arXiv:2511.20785) to
+Qwen3-VL, replacing its single non-verifiable component — LLM-as-a-Judge
+answer scoring — with fully programmatic rewards: alias-set containment
+matching for the answer plus evidence-window IoU for the tool call. This keeps
+the clean single-GPU RLVR setup that motivated the project.
+
+Relation to the original TVG plan: TVG dropped QA because there the tool's
+return value and the answer are the same kind of object (a time interval), so
+the agentic loop degenerates into iterative refinement. QA restores the tool's
+evidential role — `crop_video` fetches evidence, the answer interprets it —
+while answer-length stratification keeps the reward verifiable.
+
+## 2. Goal (all ablations cut on 2026-08-26 for time)
+
+One question: **does the LongVT recipe, with the judge replaced by verifiable
+rewards, hold up on Qwen3-VL-4B on a single GPU?**
+
+Pipeline: SFT (~2K tool traces) → GRPO (one configuration) → evaluation on
+rl_val, reported relative to the zero-shot baseline.
+
+Former ablation points, now fixed in place: cold-start dose = ~2K; the reward
+includes R_time (λ>0, following the paper's own recipe); max turns T=3.
+
+Two retained items are *not* ablations: the zero-shot baseline (the anchor
+that "relative improvement" is measured against) and the matcher audit gate
+(§5, launch QC for GRPO). The cut arms — dose 0 / general-CoT mix, λ=0, T=1 —
+are future work.
+
+## 3. Data (all numbers measured; full per-file provenance in `DATA.md`)
+
+### 3.1 Lineage
+
+selftrace (15,354 traces) is LongVT's stage-3 RFT data: its model's successful
+RL rollouts (answer judged correct AND crop-vs-evidence IoU ≥ 0.3) over the
+selfqa questions. Deduplicated, it holds 1,290 unique questions with a median
+of 7 redundant solutions each. Joined against selfqa's 1,668 questions on
+exact question text: 1,157 match; 132 are selftrace-only (their videos ship
+only in a 51.5 GiB archive we do not buy — dropped); 510 selfqa questions have
+no trace at all — the questions their model never solved.
+
+### 3.2 Allocation by answer verifiability (normalized GT ≤ 6 words)
+
+|                     | verifiable                 | unverifiable        |
+|---------------------|----------------------------|---------------------|
+| with traces (1,157) | 918: 360 → SFT, 558 → RL   | 240 → all to SFT    |
+| no traces (510)     | 335: all → RL              | 175 → dropped       |
+
+SFT questions that RL's matcher could never score go to SFT (imitation does
+not need a checker); the RL pool keeps only match-scorable answers. The 360
+are sampled with weight 1/n_traces to lean toward the questions their model
+rarely solved.
+
+### 3.3 The three sets
+
+| Set  | Composition | Size |
+|------|-------------|------|
+| SFT  | 600 selftrace questions × ≤3 answer-distinct traces = 1,379 rows, + 600 geminicot rows (question diversity; the paper's genuine stage-1 QA data) | ~1,979 rows → `sft_train/sft_val.parquet`, 2% val split by video id |
+| RL   | remaining verifiable selfqa questions, question/video-disjoint from SFT | 893 (upper bound; difficulty filtering should keep 500–700) |
+| Eval | rl_val, verbatim | 114 (zero video overlap with selftrace — verified) |
+
+The row ratio selftrace : geminicot ≈ 7 : 3 (question ratio 1 : 1). Knobs in
+`data_prep/render_traces.py`: `--sft-questions / --traces-per-q /
+--geminicot-n / --max-gt-words`.
+
+### 3.4 Disclosed biases
+
+- **SFT easy-question bias**: traces exist only where their model succeeded
+  (inherent to distillation); partially offset by the 1/n_traces sampling.
+- **RL hard-question bias**: the 335 no-trace questions are their model's
+  total failures — good (that is where RL has headroom), but broken GT hides
+  among them; the difficulty filter removes those as all-wrong groups, which
+  is why 893 is an upper bound.
+- **Cold-start concentration confound**: our cold start is doubly-filtered
+  successful trajectories — "stronger" per sample than the paper's stage-1
+  mixture, so RL's marginal gain will read smaller than theirs.
+- **Trace parentage**: selftrace and geminicot are Qwen2.5-VL and Gemini
+  output distributions respectively. If the zero-shot probe shows a high
+  native success rate, best-of-N self-bootstrapping could replace
+  cross-model distillation entirely (future work).
+
+## 4. Re-rendering discipline
+
+Principle: **cold start is calibration to the RL environment. Every byte the
+model will *see* at RL time must be generated by the RL-time code; every byte
+it must *produce* must be in the exact surface form the RL-time parser
+accepts. The source traces contribute content only.**
+
+Implemented in `data_prep/render_traces.py` (dual-source: selftrace by
+default, `--geminicot-n` mixes geminicot):
+
+1. system/user prompts rebuilt from `agentic_tvg/prompts.py` (QA mode). The
+   upstream sentence "The Video path for this video is: X.mp4" is removed —
+   it teaches the model to echo a parameter our tool schema does not have.
+2. tool_call canonicalized: byte-identical to the Qwen3 chat template's own
+   serialization; the `video_path` argument dropped.
+3. Tool-response frames re-decoded from the mp4s: the trace's own crop window
+   goes through `agentic_tvg/video_frames.py` — the same function the RL tool
+   executes — for zero train/serve skew. (Also saves the 51.5 GiB archive
+   that holds their pre-cropped jpgs.)
+4. train/val split by video id: each question carries several traces; a
+   row-level split would leak solved questions into val.
+
+## 5. Reward (fully programmatic, no online judge)
+
+```
+R = 0.5·format_ok + R_acc + λ·IoU(crop window, video_segment)
+```
+
+- **R_acc**: after normalization (lowercase, strip punctuation and articles),
+  does the answer contain any entry of the question's **offline alias set**?
+  Answers longer than len(shortest alias)+4 words score 0, which kills
+  enumeration hacking ("red orange yellow blue…").
+- **Alias sets**: generated once at data-prep time for the 893 RL questions
+  (rule-based: parenthetical variants like "stone (rock)", number words;
+  LLM enrichment on top), then frozen and auditable.
+- **R_time**: zero unless the tool is called — evidence use is rewarded
+  directly, which is the paper's "tool reward" question in a cleaner form.
+- **Audit gate** (must pass before GRPO): score the zero-shot probe's real
+  (answer, GT) pairs with the matcher; re-judge the same pairs offline with a
+  strong model; measure FN/FP. Pass at FN ≤ 5% and FP ≈ 0. Otherwise escalate
+  to a small judge for non-matching answers only — a documented fallback, not
+  the default.
+- The asymmetry that justifies all this: a matcher false negative zeroes a
+  whole group → zero variance → the sample is skipped (**safe**: wasted, not
+  wrong). A judge false positive rewards a wrong answer → actively learned
+  (**unsafe**). Training therefore uses the strict matcher; evaluation (114
+  items) can afford the strongest checker offline. They need not be the same
+  instrument.
+
+## 6. Training configuration
+
+- **SFT**: `run_sft.sh` (QA data is the default; LoRA r=16, ViT frozen via
+  exclude_modules, lr 1e-4, 2 epochs ≈ 124 optimizer steps, est. 6–8 h).
+  `max_length=12288` — QA traces run longer than TVG's; memory is governed by
+  `max_token_len_per_gpu=16384` regardless, so the larger cap costs nothing.
+- **GRPO**: rework of `run_grpo.sh` — data → the RL parquet, reward →
+  `compute_score_qa`; single-GPU constraints unchanged (K=8, 12K context,
+  GPU_MEM_UTIL 0.45). 2-step smoke before any long run.
+
+## 7. Honest gaps vs LongVT
+
+| Dimension | LongVT | This project | Nature |
+|---|---|---|---|
+| SFT | 247.9K samples, 64 GPUs, full-param | ~2K, LoRA, 1 GPU | 125× gap — the bet that a strong instruct base carries the general ability itself |
+| RL prompts | 1.6K | 893 upper bound (500–700 after filtering) | ~2.5–3× gap |
+| RL config | K=16, 16K new tokens, 36K prompt | K=8, 12K total budget | single-GPU constraint |
+| R_acc | LLM-as-a-Judge {1, 0.5, 0} | alias containment matcher (drops the 25% long-answer questions) | **the core methodological claim** |
+| RFT | 15.4K own-rollout traces | their RFT data repurposed as our cold start; our own stage 3 pending | deliberate, disclosed |
+| Base | Qwen2.5-VL-7B | Qwen3-VL-4B | generation change |
+
+## 8. Remaining work (RL side — build while SFT trains; all CPU-only)
+
+- [ ] `data_prep/extract_rl.py`: `allocation.json` + selfqa → RL parquet with
+      the alias column
+- [ ] `agentic_tvg/answer_match.py`: normalization + alias expansion +
+      containment matcher (+ tests)
+- [ ] `agentic_tvg/reward.py::compute_score_qa`
+- [ ] QA mode for `probe/step0_probe.py` (zero-shot baseline + audit-gate data)
+- [ ] GRPO script rework + 2-step smoke
+- [ ] Alias LLM enrichment + spot check
+
+## 9. Runbook
+
+Every new terminal: `conda activate verl && cd ~/agentic-tvg` (LD_PRELOAD
+rides along automatically; the training script's preflight guard backstops it).
+
+**Step 1 — all data, one command** (~31G download + render, 30–60 min)
+
+```bash
+bash prepare_data.sh
+```
+
+CHECKs printed as it runs: every download `[ok]` · allocation
+`joined 1157 | SFT: 240 forced + 360 sampled = 600 questions -> 1379 traces |
++ geminicot 600 | RL: 893` · rendered ~1.9K rows →
+`data/processed/{sft_train,sft_val}.parquet` + `frames/`.
+Re-running is safe: downloads resume, populated dirs are skipped, parquet is
+overwritten.
+
+**Step 2 — smoke: 2 real training steps** (~7 min)
+
+```bash
+SMOKE=1 bash run_sft.sh
+```
+
+CHECK: finite, decreasing loss; no truncation errors; then
+`rm -rf ckpts/smoke` (~19G). (verl always validates and saves on the final
+step regardless of the -1 freqs — expected.)
+
+**Step 3 — the real run** (~6–8 h; `nvidia-smi` must read 0 MiB first)
+
+```bash
+nohup bash run_sft.sh trainer.test_freq=25 optim.lr_warmup_steps_ratio=0.1 \
+    > logs/sft.out 2>&1 &
+tail -f logs/sft.out
+```
+
+test_freq=25 gives five val points across the ~124 steps — the overfitting
+curve that decides whether EPOCHS moves. Watch `val/loss` at steps 25/50/75/100:
+flat or rising between epochs → do not raise EPOCHS.
+
+Metrics are persisted two ways (both automatic):
+- tensorboard events → `logs/tb/<EXP_NAME>/` (run_sft.sh exports
+  TENSORBOARD_DIR; `tensorboard --logdir logs/tb` if you want the live UI —
+  VS Code forwards the port automatically)
+- the console log itself → render PNGs any time with
+  `python plot_metrics.py` (loss / memory / lr / grad-norm panels; picks the
+  newest log, or pass paths explicitly)
+
+**Step 4+** — once §8 lands: extract_rl → audit gate → GRPO smoke → GRPO.

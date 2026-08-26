@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Agentic-TVG: one-shot installer for the `verl` conda env.
+# Agentic video QA: one-shot installer for the `verl` conda env.
 # Target: A100 80GB (sm80), driver 610.43.02 / CUDA UMD 13.3, Ubuntu 22.04.
 # Rationale for every pin below: see ENVIRONMENT.md
 set -euo pipefail
@@ -81,7 +81,20 @@ pip install --no-deps "verl==0.9.0"
 log "Installing agentic-tvg (editable, --no-deps: never re-resolve torch/vllm)"
 pip install --no-deps -e "$(dirname "$0")/.."
 
-# ---------------------------------------------------------------- 7. verification
+# ---------------------------------------------------------------- 7. torchcodec's LD_PRELOAD fix
+# torchcodec dlopens the core .so matching the installed ffmpeg major (conda-forge
+# ffmpeg 8 -> libtorchcodec_core8.so). That core pulls in the conda ffmpeg's
+# libopenvino, which needs CXXABI_1.3.15; the process otherwise binds the system
+# gcc-11 /lib/x86_64-linux-gnu/libstdc++.so.6 first and the dlopen fails with
+#   OSError: ... version `CXXABI_1.3.15' not found (required by libopenvino.so)
+# Preloading the env's newer libstdc++ fixes it (libstdc++ is backward compatible,
+# and torch 2.11 CUDA + vllm 0.24 still import and see the GPU with it in place).
+# Lazy failure: `import torchcodec` succeeds without this; only decoding breaks.
+log "Registering LD_PRELOAD=\$CONDA_PREFIX/lib/libstdc++.so.6 on the env"
+conda env config vars set -n "$ENV_NAME" LD_PRELOAD="$CONDA_PREFIX/lib/libstdc++.so.6"
+export LD_PRELOAD="$CONDA_PREFIX/lib/libstdc++.so.6"   # config vars need a reactivate; this covers step 8
+
+# ---------------------------------------------------------------- 8. verification
 log "Verifying"
 python "$(dirname "$0")/check_env.py"
 

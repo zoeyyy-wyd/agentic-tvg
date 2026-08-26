@@ -64,3 +64,48 @@ def build_user_prompt(query: str, duration: float) -> str:
         f'Query: "{query.strip()}"\n'
         "Find the time interval when this happens in the video."
     )
+
+
+# --- QA task (agentic video QA with verifiable rewards; plan pivot 2026-08-25) ---
+# Same structure as the TVG prompts above: _QA_BASE states the task + frame
+# contract + answer format; the tool policy is shared conceptually but reworded
+# for QA (the tool's purpose is *evidence inspection*, not boundary refinement).
+
+_QA_BASE = (
+    "You are a precise video question answering assistant. Given a video and a question, "
+    "you answer from visual evidence in the video.\n"
+    f"You initially see {GLOBAL_NUM_FRAMES} low-resolution frames sampled evenly from the whole video; "
+    "each frame is preceded by its timestamp in seconds.\n"
+    "Always reason step by step inside <think></think> tags before anything else. "
+    "Give your final answer concisely — a short word or phrase, formatted exactly as "
+    f"{ANSWER_OPEN}your answer{ANSWER_CLOSE}, for example {ANSWER_OPEN}A red flag.{ANSWER_CLOSE}. "
+    "Output exactly one answer tag and nothing after it."
+)
+
+_QA_TOOL_POLICY = (
+    f"\nYou may call the tool {TOOL_NAME}(start_time, end_time) up to {MAX_TOOL_CALLS} times. "
+    f"It returns {CROP_NUM_FRAMES} higher-resolution frames sampled evenly from that interval, "
+    "each labeled with its timestamp. "
+    "Recommended strategy: scan the global frames, locate when the queried moment occurs, "
+    f"call {TOOL_NAME} to inspect that interval closely, verify the visual details, then answer."
+)
+
+
+def build_system_prompt_qa(mode: str = "tool_optional") -> str:
+    if mode == "direct":
+        return _QA_BASE + "\nAnswer directly from the provided frames."
+    if mode == "tool_optional":
+        return _QA_BASE + _QA_TOOL_POLICY
+    if mode == "tool_forced":
+        return _QA_BASE + _QA_TOOL_POLICY + _FORCED
+    raise ValueError(f"unknown mode {mode!r}, expected one of {MODES}")
+
+
+def build_user_prompt_qa(question: str, duration: float) -> str:
+    """User turn for QA training data; same ``<video>`` placeholder contract
+    as build_user_prompt."""
+    return (
+        f"<video>\nThe video is {duration:.1f} seconds long. "
+        f'Question: "{question.strip()}"\n'
+        "Answer the question based on the video."
+    )

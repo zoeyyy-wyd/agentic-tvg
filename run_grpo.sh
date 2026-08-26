@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # GRPO Stage-2 (plan §5) — Qwen3-VL-4B + LoRA + crop_video multi-turn, 1x A100 80GB.
+# NOTE: QA rework pending (PLAN.md 8) — the verl wiring below is verified, but
+# data expects extract_rl.py output and the reward must become compute_score_qa.
 #
 # Every non-default key below was verified against verl 0.9.0 source:
 # - rollout.mode=async + data.return_raw_chat=True    -> agent-loop path (docs/start/agentic_rl.rst)
@@ -11,16 +13,20 @@
 # - limit_images=64                                   -> vLLM mm budget: 3 crops x 16 frames + slack
 #
 # Ablation switches (plan §6):
-#   REWARD_FN=compute_score_penalty EXP_NAME=grpo_tvg_penalty bash run_grpo_tvg.sh
-#   MAX_USER_TURNS=1 ...                                      (multi-turn value, T=3 vs T=1)
+#   REWARD_FN=compute_score_penalty EXP_NAME=grpo_penalty bash run_grpo.sh
+#   MAX_USER_TURNS=1 EXP_NAME=grpo_t1 bash run_grpo.sh                                      (multi-turn value, T=3 vs T=1)
 set -xeuo pipefail
 cd "$(dirname "$0")"
 REPO=$(pwd)
 
+# Guard the two silent killers before spending hours: wrong conda env, and the
+# missing LD_PRELOAD that breaks torchcodec's first video decode (ENVIRONMENT.md §7).
+set +x; source "${REPO}/env_setup/preflight.sh"; set -x
+
 MODEL_PATH=${MODEL_PATH:-${REPO}/models/Qwen3-VL-4B-Instruct}
 TRAIN_FILE=${TRAIN_FILE:-${REPO}/data/processed/rl_train.parquet}
 VAL_FILE=${VAL_FILE:-${REPO}/data/processed/rl_val.parquet}
-EXP_NAME=${EXP_NAME:-grpo_tvg_vanilla}
+EXP_NAME=${EXP_NAME:-grpo_vanilla}
 REWARD_FN=${REWARD_FN:-compute_score}          # compute_score | compute_score_penalty
 GROUP_SIZE=${GROUP_SIZE:-8}                    # plan §5: GRPO group size
 TRAIN_BS=${TRAIN_BS:-32}                       # prompts per step (plan: 32-64)

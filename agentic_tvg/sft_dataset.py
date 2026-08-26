@@ -33,11 +33,27 @@ from verl.utils.dataset.multiturn_sft_dataset import MultiTurnSFTDataset
 # Fix 1: swap the rope-index routine used inside MultiTurnSFTDataset.__getitem__.
 _m.get_rope_index = _qwen3_vl_get_rope_index
 
+# Silence one exact transformers 5.x nag, nothing else: verl passes our
+# apply_chat_template_kwargs loose (**kwargs) instead of wrapped in
+# processor_kwargs, so processing_utils warns on EVERY call -- then adopts the
+# values on the very next line (processing_utils.py, "processor_kwargs =
+# processor_kwargs_from_kwargs"). Harmless but it prints tens of thousands of
+# lines per run and buries the real signal.
+import logging as _logging
+
+
+class _DropProcessorKwargsNag(_logging.Filter):
+    def filter(self, record: _logging.LogRecord) -> bool:
+        return "have to be in `processor_kwargs`" not in record.getMessage()
+
+
+_logging.getLogger("transformers.processing_utils").addFilter(_DropProcessorKwargsNag())
+
 # Placeholder the parent class does not recognize, so it passes through as text.
 _SLOT = "<|tvg_video_slot|>"
 
 
-class TVGMultiTurnSFTDataset(MultiTurnSFTDataset):
+class Qwen3VLMultiTurnSFTDataset(MultiTurnSFTDataset):
     """MultiTurnSFTDataset with path-based (metadata-preserving) video loading."""
 
     def __init__(self, *args, **kwargs):
