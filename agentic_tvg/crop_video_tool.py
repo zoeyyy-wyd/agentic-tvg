@@ -8,6 +8,11 @@ passes (start_time, end_time), so it can never point the tool at a wrong file.
 Returns ToolResponse(image=[PIL...], text=...). ToolAgentLoop renders the
 image block *before* the text block in the tool message, so the text refers
 back to "the frames above" and carries their timestamps.
+
+NOTE: returning a *list* of images requires the ENVIRONMENT.md §8.4 patch to
+verl's ToolAgentLoop — stock verl 0.9.0 renders a single image placeholder
+for the whole list, and vLLM then dies with "Failed to apply prompt
+replacement for mm_items['image'][1]". preflight.sh guards the patch.
 """
 
 from __future__ import annotations

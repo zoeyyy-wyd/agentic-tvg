@@ -30,6 +30,28 @@ case "${LD_PRELOAD:-}" in
         ;;
 esac
 
+# 3. Empty /etc/hosts on srv1-lg2: resolving "localhost" falls through to DNS,
+#    which walks the 5-entry search list against a dropping upstream -- ~28 s
+#    per lookup, and every Ray component does it repeatedly, so GCS/raylet/
+#    dashboard-agent time each other out before anything runs (found debugging
+#    GRPO 2026-08-26). ndots:0 tries the bare name first, which systemd-resolved
+#    answers locally in <10 ms. Real fix needs root:
+#    echo "127.0.0.1 localhost" | sudo tee -a /etc/hosts
+if ! grep -qs "localhost" /etc/hosts; then
+    export RES_OPTIONS="ndots:0 timeout:1 attempts:1${RES_OPTIONS:+ $RES_OPTIONS}"
+    _pf_warn "/etc/hosts lacks localhost -- exported RES_OPTIONS='${RES_OPTIONS}' (slow-DNS workaround)."
+fi
+
+# 4. The multi-image tool-response patch (ENVIRONMENT.md §8.4) lives inside the
+#    installed verl package, so any pip reinstall silently reverts it and GRPO
+#    rollouts crash mid-run. Refuse to start without it.
+python - <<'PY' || _pf_die "verl multi-image patch missing (ENVIRONMENT.md §8.4): re-apply it to tool_agent_loop.py"
+import inspect, sys
+from verl.experimental.agent_loop import tool_agent_loop as t
+src = inspect.getsource(t)
+sys.exit(0 if "PATCHED (agentic-tvg" in src else 1)
+PY
+
 # Cheap end-to-end proof that video decoding works, ~1 s. Catches the §7 failure
 # here instead of inside the trainer's dataloader.
 python - <<'PY' || _pf_die "torchcodec cannot decode. See ENVIRONMENT.md §7."

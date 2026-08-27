@@ -107,3 +107,94 @@ def compute_score_penalty(
     result["score"] -= penalty
     result["length_penalty"] = penalty
     return _finalize(result)
+
+
+# --------------------------------------------------------------------------
+# QA reward (PLAN.md 5): R = 0.5*format + R_acc + TIME_WEIGHT*IoU(crop, evidence)
+# --------------------------------------------------------------------------
+
+import re as _re
+
+from agentic_tvg.judge import judge_answer
+from agentic_tvg.answer_match import answer_matches, expand_aliases, parse_answer_qa
+
+TIME_WEIGHT = 0.5  # lambda on the evidence-IoU term; 0 disables it (cut ablation)
+
+_TOOL_CALL_RE = _re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", _re.DOTALL)
+
+
+def _crop_windows(solution_str: str) -> list[tuple[float, float]]:
+    """Every crop_video window the policy called during the rollout."""
+    out = []
+    for blob in _TOOL_CALL_RE.findall(solution_str or ""):
+        try:
+            args = json.loads(blob).get("arguments", {})
+            out.append((float(args["start_time"]), float(args["end_time"])))
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def _aliases_of(ground_truth: Any) -> list[str]:
+    """Accept a pre-expanded alias list (the parquet case) or a raw GT string."""
+    if isinstance(ground_truth, str):
+        return expand_aliases(ground_truth)
+    try:
+        return [str(a) for a in list(ground_truth)]
+    except TypeError:
+        return []
+
+
+def compute_score_qa(
+    data_source: str = "",
+    solution_str: str = "",
+    ground_truth: Any = None,
+    extra_info: dict | None = None,
+    **kwargs,
+) -> dict:
+    """Verifiable QA reward: format bonus + alias match + evidence IoU.
+
+    - R_acc: word-level alias containment with the anti-enumeration length cap
+      (answer_match.py). ground_truth carries the frozen alias list.
+    - R_time: best IoU between any crop_video window the policy actually
+      called and extra_info["video_segment"]. No tool call -> 0, so evidence
+      use is rewarded directly.
+    """
+    parsed = parse_answer_qa(solution_str or "")
+    fmt = FORMAT_BONUS if parsed.format_ok else 0.0
+
+    # R_acc (paper-faithful, revised 2026-08-26): EVERY parsed answer goes to
+    # the cached temp-0 judge -- LongVT rubric {FULL 1.0, PARTIAL 0.5,
+    # INCORRECT 0}. One instrument, no matcher/judge seam.
+    #
+    # The alias fallback below now fires ONLY when the judge is deliberately
+    # off (no ANTHROPIC_API_KEY, or JUDGE_DISABLE=1), which judge.py announces
+    # once on stdout. An enabled judge that fails raises JudgeUnavailable and
+    # stops the run instead: swapping a binary matcher in for the {0, 0.5, 1}
+    # rubric mid-training silently changes what we are optimising.
+    acc, judge_used = 0.0, 0.0
+    if parsed.answer:
+        ei = extra_info or {}
+        gt_text = str(ei.get("gt_text", "") or ground_truth or "")
+        verdict = judge_answer(str(ei.get("question", "")), gt_text, parsed.answer)
+        if verdict is not None:
+            judge_used = 1.0
+            acc = float(verdict)
+        else:
+            acc = 1.0 if answer_matches(parsed.answer, _aliases_of(ground_truth)) else 0.0
+
+    seg = None
+    if extra_info is not None:
+        seg = _normalize_gt(extra_info.get("video_segment"))
+    windows = _crop_windows(solution_str)
+    evidence_iou = max((temporal_iou(w, seg) for w in windows), default=0.0) if seg else 0.0
+
+    return {
+        "score": fmt + acc + TIME_WEIGHT * evidence_iou,
+        "acc": acc,
+        "format_score": fmt,
+        "evidence_iou": evidence_iou,
+        "answered": 1.0 if parsed.answer is not None else 0.0,
+        "num_tool_calls": float(len(windows)),
+        "judge_used": judge_used,
+    }

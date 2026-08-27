@@ -222,3 +222,9 @@ data/
 outputs/
 ckpts/
 logs/
+
+# results/<run>/ is committed -- curves.png, metrics.csv, the config snapshot.
+# Not the 19G checkpoint or the raw console dump that live alongside them.
+results/*/ckpt/
+results/*/merged/
+results/*/console.log

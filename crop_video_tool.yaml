@@ -6,7 +6,7 @@ tools:
   - class_name: agentic_tvg.crop_video_tool.CropVideoTool
     config:
       type: native
-      num_frames: 16
+      num_frames: 30
       max_pixels: 150528
       min_pixels: 3136
       min_crop_seconds: 2.0

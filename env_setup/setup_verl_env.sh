@@ -68,7 +68,7 @@ fi
 
 # ---------------------------------------------------------------- 4. verl runtime dependencies
 log "Installing verl runtime dependencies (requirements.txt)"
-pip install -r "$(dirname "$0")/../requirements.txt"
+pip install -r "$(dirname "$0")/requirements.txt"
 
 # ---------------------------------------------------------------- 5. verl itself
 log "Installing verl 0.9.0 (--no-deps is mandatory: a plain install re-resolves deps and can replace torch/vllm)"

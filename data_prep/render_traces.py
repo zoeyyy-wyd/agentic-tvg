@@ -53,7 +53,7 @@ from agentic_tvg.constants import (  # noqa: E402
     GLOBAL_NUM_FRAMES,
 )
 from agentic_tvg.crop_video_tool import build_crop_video_schema, crop_response_text  # noqa: E402
-from agentic_tvg.prompts import build_system_prompt_qa, build_user_prompt_qa  # noqa: E402
+from agentic_tvg.prompts import build_system_prompt, build_user_prompt  # noqa: E402
 from agentic_tvg.video_frames import get_video_duration, sample_frames  # noqa: E402
 
 VID_RE = re.compile(r"([A-Za-z0-9_\-]+\.mp4)")
@@ -72,6 +72,22 @@ def msg_text(msg) -> str:
     if isinstance(c, str):
         return c
     return "".join(seg.get("text") or "" for seg in c if isinstance(seg, dict))
+
+
+MM_TAG_RE = re.compile(r"<image>|<video>")
+
+
+def strip_mm_tags(s: str) -> str:
+    """Scrub <image>/<video> out of model-authored text.
+
+    verl's SFT dataset regex-splits EVERY message string on those two tokens
+    regardless of role (multiturn_sft_dataset.py::_build_messages), so a
+    literal one inside a <think> block is counted as a real image placeholder
+    and shifts the whole images list off by one -> IndexError, mid-epoch, in a
+    dataloader worker. Exactly 1 of the 15,354 selftrace traces has one
+    (rft_9397); it cost a 57-minute run on 2026-08-26. See PLAN.md #4.5.
+    """
+    return MM_TAG_RE.sub("", s)
 
 
 def parse_trace(msgs, source: str) -> dict | None:
@@ -105,8 +121,8 @@ def parse_trace(msgs, source: str) -> dict | None:
     ans = ANSWER_RE.findall(final)
     if len(ans) != 1 or not final.endswith("</answer>") or not final.startswith("<think>"):
         return None
-    return {"question": question, "vid": vid, "think1": think1, "window": (start, end),
-            "final": final, "answer": ans[0].strip()}
+    return {"question": question, "vid": vid, "think1": strip_mm_tags(think1),
+            "window": (start, end), "final": strip_mm_tags(final), "answer": ans[0].strip()}
 
 
 def canonical_tool_call(start: float, end: float) -> str:
@@ -145,8 +161,8 @@ def render_row(question, vid, think1, window, final, video_path, duration,
             fr.save(p, quality=90)
         paths.append(str(p.resolve()))
     messages = [
-        {"role": "system", "content": build_system_prompt_qa("tool_optional")},
-        {"role": "user", "content": build_user_prompt_qa(question, duration)},
+        {"role": "system", "content": build_system_prompt("tool_optional")},
+        {"role": "user", "content": build_user_prompt(question, duration)},
         {"role": "assistant", "content": think1 + "\n" + canonical_tool_call(start, end)},
         {"role": "tool", "content": "<image>" * len(paths)
          + crop_response_text(start, end, [round(t, 2) for t in timestamps])},
@@ -174,7 +190,10 @@ def main() -> None:
     ap.add_argument("--sft-questions", type=int, default=600, help="selftrace questions allocated to SFT")
     ap.add_argument("--traces-per-q", type=int, default=3)
     ap.add_argument("--geminicot-n", type=int, default=600, help="geminicot traces mixed in (0 = pure selftrace)")
-    ap.add_argument("--max-gt-words", type=int, default=6, help="normalized GT length cap for 'verifiable'")
+    # default 999 since 2026-08-26: R_acc is judged by the LLM judge (reward.py/
+    # judge.py), which scores long answers too, so the pool no longer needs the
+    # matcher-verifiability cap. 6 was the matcher-era value (DATA.md).
+    ap.add_argument("--max-gt-words", type=int, default=999, help="normalized GT length cap for 'verifiable'")
     ap.add_argument("--val-frac", type=float, default=0.02)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--plan-only", action="store_true", help="selection + allocation.json, no rendering")
@@ -306,6 +325,17 @@ def main() -> None:
             drop["bad_window"] += 1
             continue
         rows.append(row)
+
+    # Every placeholder must have an asset behind it: the trainer resolves them
+    # positionally and an off-by-one only surfaces when the shuffled sampler
+    # happens to reach the bad row (step 50/60, 2026-08-26).
+    for r in rows:
+        n_img = sum(m["content"].count("<image>") for m in r["messages"])
+        n_vid = sum(m["content"].count("<video>") for m in r["messages"])
+        assert (n_img, n_vid) == (len(r["images"]), len(r["videos"])), (
+            f"placeholder/asset mismatch in {r['extra_info']['video_id']}: "
+            f"{n_img} <image> vs {len(r['images'])} images, "
+            f"{n_vid} <video> vs {len(r['videos'])} videos")
 
     vids = sorted({r["extra_info"]["video_id"] for r in rows})
     val_vids = set(rng.choice(vids, size=max(1, int(len(vids) * args.val_frac)), replace=False))

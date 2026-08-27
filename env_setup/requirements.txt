@@ -43,6 +43,7 @@ mathruler                     # [geo]
 math-verify                   # [math]
 
 # --- test tooling ---------------------------------------------------------
+anthropic                      # judge.py: tier-2 answer equivalence (API, cached)
 matplotlib                    # plot_metrics.py (training curves)
 pytest
 pytest-asyncio
