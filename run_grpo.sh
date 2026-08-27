@@ -7,6 +7,18 @@
 # - agent.default_agent_loop=tool_agent               -> rows also carry agent_name="tool_agent"
 # - multi_turn.tool_config_path                       -> crop_video_tool.yaml (CropVideoTool)
 # - rollout.load_format=safetensors + lora_rank>0     -> LoRA-RL contract (docs/advance/ppo_lora.rst)
+# - fsdp_config.*_offload=False                       -> a SPEED choice, not a memory fix.
+#   param_offload exists for full-parameter finetuning, where params+grads+Adam
+#   states cannot coexist with vLLM. With LoRA only the adapter is trainable
+#   (126 MiB of weights, 265 MiB of optimizer state), so resident need is ~18G
+#   against the 80-52=28G that survives vLLM waking up. Measured 2026-08-27:
+#   785 s/step vs 876 s with offload on -- 91 s/step, ~6.7 h over 267 steps,
+#   from not shuttling 35 G of params across PCIe twice per step.
+#   It barely moves host RAM (peak 171 vs 175 G): the CPU-side WorkerDict
+#   footprint is FSDP scaffolding, not the parked params. Cost is VRAM
+#   headroom, 23 G -> 6.5 G, spent at the weight-sync instant (73.5/80 G,
+#   identical on all 4 measured steps -- deterministic, not load-dependent).
+#   If that is too thin: gpu_memory_utilization=0.55 buys back ~8 G.
 # - actor.use_kl_loss=True (NOT algorithm.use_kl_in_reward) -> the GRPO paper puts
 #   KL in the loss, not in the reward; mixing it into the reward would also
 #   corrupt the reward numbers we report. Free here: lora_rank>0 makes verl set
@@ -119,6 +131,16 @@ RESULT_DIR=${REPO}/results/${RESULT_NAME}
 mkdir -p "${RESULT_DIR}" logs
 export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
 
+# glibc 分配器：这两个是 2026-08-27 三次 CPU OOM 的解药，别删。
+# glibc 的 mmap 门槛是动态的——每释放一个大块就上调到那个块的大小（上限
+# 32MB）且只升不降。本项目的分配尺寸（单帧 588KB、crop 52MB）正落在这个区
+# 间，门槛一旦被顶到上限，后续分配改从堆里拿，free 后还不给内核，RSS 只涨
+# 不跌：实测 111 → 112 → 129 → 崩（182/188）。显式设置会关掉动态调整。
+# 加上之后 8 步实测：96→99→116→132→99→100→100→101，涨上去能回落。
+# 注意结尾的下划线是 glibc 的命名规范，漏了不生效且不报错。
+export MALLOC_MMAP_THRESHOLD_=${MALLOC_MMAP_THRESHOLD_:-131072}
+export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
+
 # rollout_data_dir vs validation_data_dir: not interchangeable. The first is
 # read only inside the training loop (ray_trainer.py:1697); _validate dumps to
 # the second (:696), so a val_only run with just the first writes nothing.
@@ -165,8 +187,8 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     actor_rollout_ref.actor.entropy_coeff=0 \
-    actor_rollout_ref.actor.fsdp_config.param_offload=True \
-    actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
+    actor_rollout_ref.actor.fsdp_config.param_offload=False \
+    actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.mode=async \
     actor_rollout_ref.rollout.max_model_len=$((MAX_PROMPT_LEN + MAX_RESP_LEN)) \
