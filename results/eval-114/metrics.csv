@@ -1,8 +1,0 @@
-metric,base,sft,delta
-format_score,0.0000,0.4868,+0.4868
-answered,0.3070,0.9737,+0.6667
-acc,0.1447,0.4649,+0.3202
-evidence_iou,0.1193,0.1500,+0.0307
-num_tool_calls,1.9298,0.9737,-0.9561
-reward,0.2044,1.0267,+0.8223
-judge_used,,0.9737,

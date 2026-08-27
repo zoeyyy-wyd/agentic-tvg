@@ -186,60 +186,59 @@ and why they are what they are.
 | RFT | 15.4K own-rollout traces | their RFT data repurposed as our cold start; our own stage 3 pending | deliberate, disclosed |
 | Base | Qwen2.5-VL-7B | Qwen3-VL-4B | generation change |
 
-## 8. Remaining work (RL side — build while SFT trains; all CPU-only)
+## 8. Remaining work
 
-- [x] `data_prep/extract_rl.py` — done, ran clean: 1,068 + 114 rows, zero drops
-- [x] `agentic_tvg/answer_match.py` — done, word-level containment + length cap (+ tests, 31 passing)
-- [x] `agentic_tvg/reward.py::compute_score_qa` — done (0.5·fmt + acc + 0.5·evidence-IoU)
-- [x] eval — no separate script or serving needed after all: GRPO's own
-      `val_only` path *is* the eval, which also guarantees zero train/serve
-      skew (§4). `trainer.validation_data_dir` collects the per-row answer/GT
-      dump the audit gate wanted (note `rollout_data_dir` is the training-loop
-      key and writes nothing under `val_only`)
-- [x] eval results — **n=114, paired: `results/eval-114/`** (table, metrics.csv,
-      and the SFT arm's per-row dump). Headline: acc 0.145 -> 0.465, reward
-      0.204 -> 1.027, format_score 0.000 -> 0.487. Quote that file, not the
-      n=10 pilot below, whose acc delta (+0.05) turned out to be a
-      small-sample artifact — the 114-row set gives +0.32.
+- [x] `data_prep/extract_rl.py` — 1,068 + 114 rows, zero drops
+- [x] `agentic_tvg/answer_match.py` — word-level containment + length cap (31 tests)
+- [x] `agentic_tvg/reward.py::compute_score_qa` — 0.5·fmt + acc + 0.5·evidence-IoU
+- [x] eval — no separate script or serving needed: GRPO's own `val_only` path
+      *is* the eval, so evaluation and RL cannot drift apart (§4).
+      `trainer.validation_data_dir` writes the per-row answer/GT dump the audit
+      gate wanted; `rollout_data_dir` is the training-loop key and writes
+      nothing under `val_only`. Both dump `<step>.jsonl`, so a run accumulates
+      its whole history rather than overwriting.
+- [x] eval results, n=114 paired, greedy, judge in both arms:
 
-- [x] eval pilot, n=10, 2026-08-26 (superseded; kept for the record).
+      | | base | SFT | Δ |
+      |---|---:|---:|---:|
+      | format_score | 0.0000 | 0.4956 | +0.4956 |
+      | answered | 0.3070 | 0.9912 | +0.6842 |
+      | acc | 0.1447 | 0.4518 | **+0.3071** |
+      | evidence_iou | 0.1193 | 0.1411 | +0.0218 |
+      | num_tool_calls | 1.9298 | 0.9912 | −0.9386 |
+      | reward | 0.2044 | 1.0179 | +0.8135 |
 
-      Paired, n=10 (same rows, config and judge in both arms):
+      SFT arm = step-0 validation of the GRPO run, so it is measured on exactly
+      the model RL starts from; per-row dump at
+      `results/grpo-vanilla/val_rollouts/0.jsonl`. The base arm was run
+      2026-08-26 22:47 and has aggregate numbers only — no dump, no file.
 
-      | | base | SFT-merged |
-      |---|---:|---:|
-      | format_score | 0.000 | **0.500** |
-      | answered | 0.600 | **1.000** |
-      | acc | 0.250 | 0.300 |
-      | evidence_iou | 0.159 | 0.141 |
-      | num_tool_calls | 1.50 | 1.00 |
-      | reward | 0.329 | 0.870 |
+      Reading: the base model was never bad at *calling* the tool (1.93
+      calls/row, IoU 0.119), it was bad at stopping — it never emitted a
+      parseable `<think>/<answer>`, so only 31% of rows answered at all. SFT
+      bought the output form *and* real accuracy (3.1x). IoU barely moved,
+      which is the RL R_time term's job. An n=10 pilot the day before put the
+      acc delta at +0.05 and concluded the gain was formatting only; that was
+      a small-sample artifact.
 
-      format_score is scored 0 or FORMAT_BONUS=0.5, so 0.500 means all ten
-      passed and 0.000 means none did. That plus answered 0.6 → 1.0 is the
-      whole story: the base model already calls crop_video competently (1.5
-      calls/row, IoU 0.159 — it was never the missing piece), and what SFT
-      bought is the output *form* the RL parser accepts. Exactly the cold
-      start's job per §4. acc +0.05 and the iou/tool-call drops are inside
-      10-row noise; the RL R_time term is what should move IoU.
-
-      Unpaired, n=114, base only: format_score 0.0000, answered 0.307,
-      acc 0.145, evidence_iou 0.119, num_tool_calls 1.93, reward 0.204.
-      Confirms format_score = 0 on the full set rather than by luck of ten,
-      and shows the 10-row slice is the easier end (answered .60 vs .307).
-      Not comparable to the SFT arm above — different n.
-
-- [ ] optional: SFT arm on all 114 rows (~30 min) if the paper wants n=114
-- [x] GRPO script rework — done, `run_grpo.sh` header records every key it
-      verified against verl 0.9.0 source
-- [x] GRPO validation smoke — passed 2026-08-26 22:1x, the first time this
-      repo ever produced `val-core`/`val-aux` metrics. Run it as
-      `bash run_grpo.sh trainer.val_only=True data.val_max_samples=N
-      data.val_batch_size=2` (`val_only` returns straight after `_validate()`,
-      ray_trainer.py:1418; `val_batch_size` is the loader batch, NOT a row
-      limit — leaving it unset loads all 114 at once and is the likeliest
-      cause of the earlier CPU-OOM kills)
+      Caution: the two arms must come from one merge. Re-merging the same SFT
+      checkpoint via PEFT instead of a hand-rolled fold changed only float
+      precision, yet under greedy decoding 104 of 114 trajectories diverged —
+      one flipped argmax and the rest of the sequence follows. Aggregates
+      moved <0.02, but per-row results are not transferable between merges.
+- [x] GRPO script rework — `run_grpo.sh` header records every key verified
+      against verl 0.9.0 source
+- [x] GRPO validation smoke — first `val-core`/`val-aux` metrics this repo has
+      produced. `bash run_grpo.sh trainer.val_only=True` (returns straight
+      after `_validate()`, ray_trainer.py:1418). `val_batch_size` is the loader
+      batch, NOT a row cap.
+- [x] GRPO memory smoke — 3 steps at batch 8 × K=16, peak 132/188 G RAM,
+      13.6 min/step. At batch 16 (256 traj) step 1 dies of CPU OOM; §6.
+- [ ] **GRPO run in progress** — started 2026-08-27 04:22, 267 steps ≈ 60 h.
+      Watch `val-core/…/acc` against train reward (divergence = reward
+      hacking) and `evidence_iou`, which has the most headroom (0.141 of 0.5).
 - [ ] Alias LLM enrichment + spot check
+- [ ] base arm has no per-row dump; re-run needs the GPU back
 
 ## 9. Runbook
 
