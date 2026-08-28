@@ -1,6 +1,6 @@
 # SFT run `sft_mix` — Qwen3-VL-4B + LoRA
 
-Cold-start SFT for the agentic video-QA line (PLAN.md §3, §6). One A100 80GB,
+Cold-start SFT for the agentic video-QA line (DATA.md). One A100 80GB,
 verl 0.9.0 SFT trainer. Finished 2026-08-26 19:51.
 
 ## Result
@@ -68,7 +68,7 @@ survived the rollback).
    dataset splits every message string on `<image>`/`<video>` regardless of
    role, so the row promised 31 images and shipped 30. Fixed in
    `data_prep/render_traces.py` (scrub at parse time + assert
-   placeholders == assets before writing); see PLAN.md §4.5, DATA.md §7.2.
+   placeholders == assets before writing); see DATA.md §0.5 and §7.2.
 2. **17:57-19:51** — resumed from `global_step_25`, ran to 120 clean.
 
 One manual intervention during the resume: verl tracks checkpoint retention in

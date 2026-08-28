@@ -21,6 +21,13 @@ Two things this has to get right that the SFT plotter did not:
 Usage:
     python plot_grpo.py                          # newest logs/grpo*.log
     python plot_grpo.py LOG -o curves.png --csv metrics.csv
+    python plot_grpo.py logs/tb/grpo_vanilla -o curves.png   # TB event DIR
+
+The TB-directory mode exists because console logs are mortal (one was rm'd
+mid-run on 2026-08-28) while the tensorboard events under logs/tb/<exp>/
+survive every crash and resume. All event files in the dir are merged in
+mtime order with last-write-wins per step -- the same convention as
+concatenating console logs, so a resumed run's replayed steps take precedence.
 """
 
 from __future__ import annotations
@@ -92,8 +99,31 @@ def panels_for(series: dict) -> list[tuple[str, list[str]]]:
     return out
 
 
+def tb_series(d: Path) -> dict:
+    """Merge every events file under d into parse()-shaped series."""
+    from tensorboard.backend.event_processing import event_accumulator
+    by_step = {}
+    for f in sorted(d.glob("events*"), key=lambda q: q.stat().st_mtime):
+        ea = event_accumulator.EventAccumulator(str(f), size_guidance={"scalars": 0})
+        ea.Reload()
+        for tag in ea.Tags()["scalars"]:
+            for ev in ea.Scalars(tag):
+                by_step.setdefault(ev.step, {})[tag] = ev.value
+    series = {}
+    for step in sorted(by_step):
+        for k, v in by_step[step].items():
+            series.setdefault(k, ([], []))
+            series[k][0].append(step)
+            series[k][1].append(v)
+    return series
+
+
+def load(path: Path) -> dict:
+    return tb_series(path) if path.is_dir() else parse(path)
+
+
 def plot(path: Path, out: Path | None = None) -> Path | None:
-    series = parse(path)
+    series = load(path)
     panels = panels_for(series)
     if not panels:
         return None
@@ -122,7 +152,7 @@ def plot(path: Path, out: Path | None = None) -> Path | None:
     fig.suptitle(f"{path.name}  ({len(series)} metrics logged, {len(panels)} shown)",
                  fontsize=11)
     fig.tight_layout()
-    out = out or path.with_suffix(path.suffix + ".png")
+    out = out or (path / "curves.png" if path.is_dir() else path.with_suffix(path.suffix + ".png"))
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=120)
     plt.close(fig)
@@ -155,7 +185,7 @@ def main() -> None:
         if csv_out is not None and written:
             # Every metric, not just the plotted ones -- the whitelist decides
             # what is worth a panel, never what is worth keeping.
-            print(f"{log} -> {write_csv(parse(log), csv_out)}")
+            print(f"{log} -> {write_csv(load(log), csv_out)}")
 
 
 if __name__ == "__main__":

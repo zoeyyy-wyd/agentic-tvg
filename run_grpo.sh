@@ -85,7 +85,7 @@ VAL_FILE=${VAL_FILE:-${REPO}/data/processed/rl_val.parquet}
 MAX_PROMPT_LEN=${MAX_PROMPT_LEN:-4608}
 MAX_RESP_LEN=${MAX_RESP_LEN:-16384}
 EXP_NAME=${EXP_NAME:-grpo_vanilla}
-REWARD_FN=${REWARD_FN:-compute_score_qa}       # PLAN.md 5: format + alias match + evidence IoU
+REWARD_FN=${REWARD_FN:-compute_score_qa}       # README "Reward": 0.5*format + judge R_acc + 0.5*evidence-IoU
 GROUP_SIZE=${GROUP_SIZE:-16}                   # K=16 (FRAMES_SWEEP §5; GPU-free, costs wall time)
 # prompts/step. 8 x K=16 = 128 trajectories/step. Was 16 (=256 traj) until
 # 2026-08-27, when step 1 died with ray OutOfMemoryError at the vLLM weight
@@ -163,6 +163,15 @@ export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
 export MALLOC_MMAP_THRESHOLD_=${MALLOC_MMAP_THRESHOLD_:-131072}
 export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
 
+# - +ray_kwargs.ray_init.object_store_memory=40GiB   -> cap Ray's plasma store.
+#   Default is 30% of node RAM (53.4G here), and its tmpfs arena only grows --
+#   pages once touched are never returned, so the ceiling IS the cost. Measured
+#   2026-08-28: one step's DataProto is a single 16.5G object, /dev/shm high
+#   water after 67 steps was 20G, so 40G holds two generations with 2x margin.
+#   ray_init is **kwargs-forwarded to ray.init() (main_ppo.py:75); the key is
+#   real (inspect.signature confirms). If it ever overflows the symptom is an
+#   explicit ObjectStoreFullError, not a silent OOM.
+#
 # rollout_data_dir vs validation_data_dir: not interchangeable. The first is
 # read only inside the training loop (ray_trainer.py:1697); _validate dumps to
 # the second (:696), so a val_only run with just the first writes nothing.
@@ -181,6 +190,7 @@ export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
+    +ray_kwargs.ray_init.object_store_memory=42949672960 \
     algorithm.use_kl_in_reward=False \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${VAL_FILE}" \
@@ -253,5 +263,9 @@ python3 -m verl.trainer.main_ppo \
     trainer.save_freq=20 \
     trainer.test_freq=20 \
     trainer.total_epochs=100 \
+    `# ^ sentinel, not a target: the epoch loop must outlast the real stop,
+       total_training_steps below (267 = 2 epochs at batch 8; one epoch is only
+       ~133 steps, so total_epochs=1 would end the run early). If you ever
+       remove total_training_steps, 100 epochs = 13,350 steps -- do not.` \
     trainer.total_training_steps="${TOTAL_STEPS}" \
     "$@" 2>&1 | tee "logs/${EXP_NAME}_$(date +%Y%m%d_%H%M%S).log"

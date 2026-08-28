@@ -110,7 +110,7 @@ def compute_score_penalty(
 
 
 # --------------------------------------------------------------------------
-# QA reward (PLAN.md 5): R = 0.5*format + R_acc + TIME_WEIGHT*IoU(crop, evidence)
+# QA reward (README "Reward"): R = 0.5*format + judge R_acc + TIME_WEIGHT*IoU(crop, evidence)
 # --------------------------------------------------------------------------
 
 import re as _re

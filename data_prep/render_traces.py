@@ -85,7 +85,7 @@ def strip_mm_tags(s: str) -> str:
     literal one inside a <think> block is counted as a real image placeholder
     and shifts the whole images list off by one -> IndexError, mid-epoch, in a
     dataloader worker. Exactly 1 of the 15,354 selftrace traces has one
-    (rft_9397); it cost a 57-minute run on 2026-08-26. See PLAN.md #4.5.
+    (rft_9397); it cost a 57-minute run on 2026-08-26. See DATA.md §7.2.
     """
     return MM_TAG_RE.sub("", s)
 

@@ -1,4 +1,4 @@
-"""Verifiable answer checking for the QA reward (PLAN.md 5).
+"""Verifiable answer checking for the QA reward (README, Reward).
 
 Three pieces, all deterministic:
 - normalize():      lowercase, strip punctuation and articles
@@ -12,7 +12,7 @@ Three pieces, all deterministic:
                     than len(shortest alias) + LENGTH_SLACK words scores 0,
                     so "red orange yellow blue green" cannot farm color GTs.
 
-Error asymmetry rationale (PLAN.md 5): a false negative zeroes a GRPO group
+Error asymmetry rationale (README, Reward): a false negative zeroes a GRPO group
 -> zero variance -> the sample is skipped (safe). Strictness is the point.
 """
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build the RL parquets for GRPO (PLAN.md 3/5, provenance DATA.md 1).
+"""Build the RL parquets for GRPO (README Reward, provenance DATA.md §1).
 
 - rl_train.parquet: the RL pool from qa_allocation -- selfqa questions that are
   question/video-disjoint from SFT and whose answers are matcher-verifiable
@@ -10,7 +10,7 @@
 Every row is verl RLHFDataset + ToolAgentLoop schema (prompt/videos/
 reward_model/extra_info/agent_name), with:
 - prompt rebuilt from agentic_tvg.prompts (QA mode) -- byte-identical to the
-  SFT rows, per the re-rendering discipline (PLAN.md 4)
+  SFT rows, per the re-rendering discipline (DATA.md §0.5)
 - reward_model.ground_truth = the raw GT text (the judge grades it; the
   no-key offline fallback expands rule aliases at scoring time)
 - extra_info.video_segment = the evidence window for the R_time reward term

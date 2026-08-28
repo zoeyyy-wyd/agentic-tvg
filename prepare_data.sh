@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# QA pipeline: empty checkout -> sft_{train,val}.parquet (PLAN.md §9, Step 1).
+# QA pipeline: empty checkout -> sft_{train,val}.parquet (README "Run").
 #
 #   bash prepare_data.sh              # ~36G downloads + render, 30-60 min
 #   SKIP_ARMB=0 bash prepare_data.sh  # also fetch Arm-B image-CoT (4.7G; ablations were cut 2026-08-26)
@@ -71,4 +71,4 @@ python data_prep/render_traces.py --plan-only
 step "Full render, decodes ~32K frames (CHECK: rendered ~1.9K+, small drop counters)"
 python data_prep/render_traces.py
 
-step "Done. Next: QA SFT smoke -- PLAN.md §9, Step 2"
+step "Done. Next: QA SFT smoke -- README, Run section"

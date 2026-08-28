@@ -4,7 +4,7 @@
 **Method** two real GRPO steps per setting (`run_grpo.sh` + overrides), TRAIN_BS=8,
 K=4 unless noted; peak VRAM from 5 s `nvidia-smi` sampling, timings from verl's
 `perf/` metrics.
-**Question** what global frame count can SFT and RL share (PLAN §6), and which
+**Question** what global frame count can SFT and RL share (DATA.md §0), and which
 knobs have to move with it.
 
 Four startup blockers were fixed before any of this could run; see
@@ -92,7 +92,7 @@ VRAM** while step time nearly doubles.
   trajectory count.
 - Changing the frame count is not a local edit: `constants.GLOBAL_NUM_FRAMES`
   is baked into the prompt text, so SFT data must be re-rendered and
-  `extract_rl.py` re-run (PLAN §4), and `MAX_PROMPT_LEN` / `max_model_len` must
+  `extract_rl.py` re-run (DATA.md §0.5), and `MAX_PROMPT_LEN` / `max_model_len` must
   move with the §1 table.
 
 **Not the whole story:** this sweep's 2-step smokes reported 128 trajectories/step

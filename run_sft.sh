@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The one SFT script — Qwen3-VL-4B + LoRA, 1x A100 80GB, verl's built-in SFT
-# trainer (torchrun entry). Defaults run the QA main line (PLAN.md).
+# trainer (torchrun entry). Defaults run the QA main line (README).
 #
 #   SMOKE=1 bash run_sft.sh      # 2 real steps, no ckpt/eval          [~7 min]
 #   bash run_sft.sh              # full QA SFT, ~2K rows x 2 epochs    [~6-8 h]

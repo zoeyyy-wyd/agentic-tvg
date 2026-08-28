@@ -1,21 +1,24 @@
-"""Tier-2 answer-equivalence judge: Anthropic API, temp 0, disk-cached.
+"""Answer-equivalence judge: Anthropic API, LongVT's rubric, temp 0, disk-cached.
 
-Reward tiers (PLAN.md 5, revised 2026-08-26):
-  tier 1: word-level alias containment within the length cap -> acc=1, free,
-          deterministic (answer_match.py)
-  tier 2: everything else -- no containment hit, OR hit but over the length
-          cap (possible enumeration) -> this judge decides
-The judge can only grant what the matcher denied, and is instructed to reject
-enumerations/hedges, so the tier-1 anti-gaming cap stays load-bearing as a
-*router*, not a scorer.
+R_acc, one instrument (README "Reward"; revised 2026-08-26, the free matcher
+fast-path was removed -- it saved ~$1-3/run and created a matcher-vs-judge
+grading seam): EVERY parsed answer goes to this judge, graded FULL 1.0 /
+PARTIAL 0.5 / INCORRECT 0, enumerations and hedges instructed INCORRECT.
+answer_match.py survives as the deliberate-offline fallback and test scorer.
 
 Determinism & audit: temperature 0 plus an append-only JSONL cache keyed by
 (question, gt, normalized answer) -- one verdict per unique triple, ever.
 The cache file doubles as the audit trail for the paper.
 
-Fail-safe: no ANTHROPIC_API_KEY, JUDGE_DISABLE=1, or API failure after
-retries -> judge_answer() returns None and the caller falls back to the
-strict matcher verdict (0). Training never blocks on the network.
+Failure semantics (hardened 2026-08-28, after a mid-run credit outage):
+  - deliberately off (no ANTHROPIC_API_KEY, or JUDGE_DISABLE=1) -> returns
+    None, announced once on stdout; caller falls back to alias matching.
+    Offline smokes/tests only -- not comparable to judged runs.
+  - enabled but failing (API error after retries, unparseable verdict,
+    missing GT) -> raises JudgeUnavailable and STOPS the run. A silent
+    fallback would swap scoring instruments mid-training; the cache makes
+    the resume free. Credits: console.anthropic.com balance, NOT claude.ai
+    usage credits -- different pool, identical error text.
 
 Manual smoke once the key is exported:
     python -m agentic_tvg.judge "What does he wave?" "A red flag." "a crimson banner"

@@ -210,7 +210,14 @@ sequence, i.e. `MAX_PROMPT_LEN + MAX_RESP_LEN`. The static alternative
 exclusive with it and a poor fit here, where RL sequence lengths vary by tens of
 times.
 
-## 6. Host RAM is the bottleneck — diagnosed and fixed 2026-08-27
+## 6. Host RAM is the bottleneck — four OOMs, three mechanisms (2026-08-27/28)
+
+The short version: (a) glibc's mmap-threshold ratchet made the heap grow
+monotonically — fixed with two env vars; (b) offload was never the RAM cost it
+looked like — disabled anyway, for speed; (c) the residual slow climb is Ray's
+plasma arena in /dev/shm, whose tmpfs pages are never returned once touched —
+capped with `object_store_memory=40G`. Details in order below, wrong turns
+included.
 
 `rollout.agent.num_workers` (default 8) are the CPU-side rollout processes:
 decode the global video → build the prompt → call vLLM over HTTP → parse the
@@ -284,7 +291,44 @@ the CPU". At that phase the parameters are on the GPU by definition — the forw
 pass is running. The 38 G is FSDP scaffolding and communication buffers, which
 exist wherever the parameters live. (Offload was disabled anyway, for speed: §7.)
 
-### Two method lessons
+### The fifth OOM and the plasma cap (2026-08-28)
+
+The glibc fix was not the whole story. With it in place the 267-step run
+reached **step 66** (up from 4) and then died the same way — 183 G, this time
+during *rollout*, not weight sync. The TB memory series showed why the crash
+point wanders: the per-step baseline still crept `97-100 → 103-104` G over 60
+steps (~2 G / 20 steps), so *any* routine peak eventually crosses the line.
+
+The carrier this time was `/dev/shm`. Three numbers that are routinely
+conflated, and were during this hunt:
+
+- `df /dev/shm` — the tmpfs, **including** segments unlinked but still mapped
+  (`torch_… (deleted)`) — 17-20 G;
+- `du /dev/shm` — only what still has a name — 5 MB, wildly misleading;
+- `Shmem` in /proc/meminfo — df's number **plus** non-tmpfs shared maps
+  (CUDA IPC) — 28-31 G. The early "shm grew 6 G in 8 steps" readings were
+  this metric, i.e. partially something else.
+
+`ray memory --stats-only` on the live run settled it: **one object, 16.5 G**
+— a whole step's DataProto (128 trajectories with their pixel tensors) is a
+single plasma object, alive while it crosses TaskRunner → AgentLoopWorker →
+RewardLoop → actor, then freed. But plasma's arena is a tmpfs file that only
+ever grows to its quota (default 30% of RAM = 53.4 G here; every ray worker
+maps the same arena, so per-process numbers lie), and touched pages are never
+returned. The ceiling is the cost, so cap the ceiling:
+
+```bash
++ray_kwargs.ray_init.object_store_memory=42949672960   # 40 G, in run_grpo.sh
+```
+
+40 G = two generations of the 16.5 G object in flight plus margin; /dev/shm
+high water over 67 steps was 20 G, so 2x. If it is ever too small the failure
+is an explicit `ObjectStoreFullError`, not a silent OOM. (`ray_init` is
+**kwargs-forwarded to `ray.init()` — main_ppo.py:75 — and the key is real per
+`inspect.signature`. Beware: ray.init itself takes **kwargs, so a typo here is
+swallowed silently; verify with `df /dev/shm` after start.)
+
+### Method lessons
 
 - **A smoke must outlive the failure period it is meant to rule out.** The 3-step
   smoke peaked at 132 G and looked like it had 56 G of headroom. It had stopped
@@ -331,11 +375,24 @@ mattering. Current state:
 - **`agentic_tvg` is an editable install** — a `.py` edit takes effect on the next
   process start, no reinstall (only `pyproject` changes need one). But the strings
   in `prompts.py` / `constants.py` are already baked into the parquet files:
-  changing them requires re-rendering the data per PLAN §4. Code taking effect is
+  changing them requires re-rendering the data per DATA.md §0.5. Code taking effect is
   not the same as data being consistent.
 - **verl itself is a wheel install**, and the multi-image tool-response fix is a
   direct edit to site-packages (ENVIRONMENT.md §8.4). A pip reinstall wipes it;
   preflight guards against running without it.
+- **Judge credits are an operational dependency.** The run hard-stops with
+  `JudgeUnavailable` when the Anthropic API refuses — by design (a silent
+  fallback to the alias matcher would swap scoring instruments mid-run). It
+  happened for real on 2026-08-28: ~$0.3/step at 128 trajectories, and the
+  key draws from **console.anthropic.com** credit balance — claude.ai
+  "usage credits" are a different pool with the same error text. Budget ~$7-10
+  per 200 steps; the cache (`judge_cache.jsonl`) makes replays free.
+- **A grad_norm spike is not always trouble.** Step 66: 0.131 vs 0.055
+  baseline, self-corrected next step. Cause: several groups went
+  near-unanimous, and group normalisation drives a lone dissenter's advantage
+  toward its cap (1-vs-15 split ⇒ |A| = √15 ≈ 3.87; observed −3.4), so one
+  trajectory carries its whole group's gradient. Watch for the *pattern*
+  (sustained rise + falling entropy = collapse loop), not the event.
 - **Config keys that are wrong but legal fail silently.** The PPO trainer reads
   `trainer.max_actor_ckpt_to_keep`; the SFT trainer's name is
   `trainer.max_ckpt_to_keep`. Copying the SFT name over cost a run on 2026-08-27

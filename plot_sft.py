@@ -45,8 +45,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 # Requiring a digit right after the colon silently drops the wrapped ones -- on
 # a GRPO log that is 32 of 106 metrics, and they are the interesting ones
 # (pg_loss, kl_loss, grad_norm, lr). The optional np.<type>( prefix fixes it.
+# The @ matters: val tags end in "/mean@1", and without @ in the class the
+# key match stops at the "1" before the colon -- every val series silently
+# collapses into a garbage series named "1".
 PAIR = re.compile(
-    r"([\w/().\-]+):(?:np\.\w+\()?(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)"
+    r"([\w/().\-@]+):(?:np\.\w+\()?(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)"
 )
 # tqdm writes its bar to the same tee'd stream, so the metrics line usually
 # arrives glued to a progress bar: "Epoch 1/2: 53%|...|32/60 [08:31<...]step:33
