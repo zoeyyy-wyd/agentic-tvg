@@ -27,9 +27,9 @@ trains is purely what RL added. It also avoids verl's LoRA-RL + vLLM
 weight-sync path, which this repo has never exercised.
 
 Usage:
-    python export_adapter.py                         # -> results/sft-mix/merged
-    python export_adapter.py --ckpt DIR --out DIR
-    python export_adapter.py --no-verify             # skip the logits checks
+    python merge_adapter.py                         # -> results/sft-mix/merged
+    python merge_adapter.py --ckpt DIR --out DIR
+    python merge_adapter.py --no-verify             # skip the logits checks
 """
 
 from __future__ import annotations

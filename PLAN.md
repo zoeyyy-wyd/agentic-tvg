@@ -297,4 +297,27 @@ Metrics are persisted two ways (both automatic):
   (loss / memory / lr / grad-norm / mfu panels; with no args it picks the
   newest log and writes the PNG beside it)
 
-**Step 4+** — once §8 lands: extract_rl → audit gate → GRPO smoke → GRPO.
+**Step 4 — GRPO** (~58 h at 785 s/step for 267 steps)
+
+```bash
+tmux new -s grpo
+bash run_grpo.sh          # no arguments; MODEL_PATH defaults to the merged SFT model
+```
+
+Two things need a human during the run:
+
+- **Delete the superseded checkpoint after every save** (every 20 steps ≈ 4.6 h).
+  `ls results/grpo-vanilla/ckpt/` must show exactly one `global_step_*`; keep
+  the one named in `latest_checkpointed_iteration.txt`. Each is ~17 GB and a
+  save writes the new one before removing the old, so two of them plus the next
+  save will not fit. `max_actor_ckpt_to_keep=1` handles this from the next run
+  onward — the run started 2026-08-27 09:51 predates that fix and needs the
+  manual pass.
+- **Watch `val-core/…/acc` against train reward.** Training reward rising while
+  val accuracy is flat is reward hacking; `response_length/mean` climbing off
+  its 3.3K baseline is the usual mechanism. Plot any time with
+  `python plot_grpo.py`.
+
+To resume after an interruption: `bash run_grpo.sh` with no arguments — adding
+`TOTAL_STEPS` would reshape the cosine schedule and make the lr jump. Then
+delete the checkpoint it resumed from, once the next one lands.

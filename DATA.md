@@ -117,9 +117,8 @@ dropped as matcher-unverifiable; the judge made them scorable, 2026-08-26.)
 
 Why the smaller pool still works: RL "data" is only the question — the
 learning signal is freshly generated rollouts at each visit. At the current
-production candidate (150 steps × 16 prompts, K=16): 2,400 visits ≈ 2.2
-epochs over 1,068 (the paper: ~3 epochs over 1,668 — same order; BS=32 would
-give 4.5). The real small-pool risk is **saturation**: as the policy masters
+production config (267 steps × 8 prompts, K=16): 2,136 visits ≈ 2.0
+epochs over 1,068 (the paper: ~3 epochs over 1,668 — same order). The real small-pool risk is **saturation**: as the policy masters
 questions, groups turn all-correct → zero variance → the effective pool
 shrinks during training. Countermeasure: early-stop at reward plateau
 (PLAN §6). Recovery knob if it saturates too early:

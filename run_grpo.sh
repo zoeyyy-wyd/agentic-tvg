@@ -30,15 +30,22 @@
 # - engine_kwargs.vllm.mm_processor_kwargs            -> cap profiling dummy images at the real crop
 #   .max_pixels=150528                                   size; without it vLLM profiles 112 images at
 #                                                        the preprocessor default 16.7M px and eats
-#                                                        the whole KV pool (FRAMES_SWEEP.md §3.5/§4.5)
+#                                                        the whole KV pool (FRAMES_SWEEP.md §5)
 # - data.val_batch_size=2                             -> loader batch, NOT a row cap:
 #   all 114 val rows still run, two at a time. The val at test_freq=20 fires with
 #   the training state resident (actor + optimizer + vLLM), which is where the
 #   2026-08-26 c30 smoke lost a DataLoader worker to `signal: Killed`; unset, the
 #   loader takes all 114 in one bite. A val_only pass over 114 is fine on its own
 #   (measured the same day), so this is about the in-training slot.
-#   Deliberately NOT capping rows with val_max_samples: it would buy ~1.2h of 52h
+#   Deliberately NOT capping rows with val_max_samples: it would buy ~1.2h of a ~60h run
 #   and silently make every val_only run a subset of the val set.
+# - max_actor_ckpt_to_keep, NOT max_ckpt_to_keep    -> the SFT trainer reads
+#   `trainer.max_ckpt_to_keep`; the PPO trainer reads `max_actor_ckpt_to_keep`
+#   / `max_critic_ckpt_to_keep` (ray_trainer.py:1006). Copying the SFT name
+#   over cost a run on 2026-08-27: Hydra's `+` happily created the key, nothing
+#   read it, and two 17G checkpoints piled up until / hit 93%. Wrong-but-legal
+#   config keys fail silently -- verify with `ls results/<run>/ckpt` after the
+#   second save, not by reading the override list.
 # - trainer.use_v1=False                              -> V1 TaskRunner imports `transfer_queue`,
 #                                                       which the verl 0.9.0 wheel neither ships nor
 #                                                       declares as a dep (ENVIRONMENT.md §8)
@@ -60,12 +67,12 @@ set +x; source "${REPO}/env_setup/preflight.sh"; set -x
 
 # GRPO starts from the SFT-merged model, not the raw base -- pointing at the
 # base silently discards the cold start, and you would not find out until the
-# run ends ~52h later. Made the default rather than an env var you must
+# run ends ~60h later. Made the default rather than an env var you must
 # remember; the zero-shot baseline is the exception and states itself:
 #   MODEL_PATH=${REPO}/models/Qwen3-VL-4B-Instruct bash run_grpo.sh ...
 MODEL_PATH=${MODEL_PATH:-${REPO}/results/sft-mix/merged}
 [ -d "${MODEL_PATH}" ] || { echo "MODEL_PATH does not exist: ${MODEL_PATH}" >&2
-    echo "  build it with: python export_adapter.py" >&2
+    echo "  build it with: python merge_adapter.py" >&2
     echo "  or pass MODEL_PATH=... explicitly (e.g. the base model for a baseline)" >&2
     exit 1; }
 TRAIN_FILE=${TRAIN_FILE:-${REPO}/data/processed/rl_train.parquet}
@@ -73,20 +80,20 @@ VAL_FILE=${VAL_FILE:-${REPO}/data/processed/rl_val.parquet}
 # Token budget knobs (frames sweep 2026-08-26: prompt ≈ 27 tok/frame + ~480
 # text/schema, so F=64→2.2K, F=128→3.9K, F=192→5.7K, F=256→7.4K; raise
 # MAX_PROMPT_LEN together with the parquet's nframes).
-# Production values (FRAMES_SWEEP.md §4.5): F=128 → prompt 4608; C=30 crops
+# Production values (FRAMES_SWEEP.md §5): F=128 → prompt 4608; C=30 crops
 # (3 × ~4.6K worst) + reasoning → response 16384.
 MAX_PROMPT_LEN=${MAX_PROMPT_LEN:-4608}
 MAX_RESP_LEN=${MAX_RESP_LEN:-16384}
 EXP_NAME=${EXP_NAME:-grpo_vanilla}
 REWARD_FN=${REWARD_FN:-compute_score_qa}       # PLAN.md 5: format + alias match + evidence IoU
-GROUP_SIZE=${GROUP_SIZE:-16}                   # K=16 (FRAMES_SWEEP §4.5; GPU-free, costs wall time)
+GROUP_SIZE=${GROUP_SIZE:-16}                   # K=16 (FRAMES_SWEEP §5; GPU-free, costs wall time)
 # prompts/step. 8 x K=16 = 128 trajectories/step. Was 16 (=256 traj) until
 # 2026-08-27, when step 1 died with ray OutOfMemoryError at the vLLM weight
 # sync: the node has 188G of RAM and TaskRunner alone held 95.8G, because every
 # in-flight trajectory carries its decoded video frames as CPU tensors. K stays
 # at 16 -- GRPO's advantage is a within-group comparison, so K is the part that
 # must not shrink; batch only controls how many distinct prompts per step.
-# Measured at 8x16 by a 3-step smoke the same day: peak RSS 132G/188G (56G of
+# Measured at 8x16 by a 3-step smoke the same day: peak PSS 132G/188G (56G of
 # headroom) and 13.6 min/step. Halving the batch did NOT halve step time --
 # weight sync and the vLLM sleep/wake cycle are fixed costs per step.
 TRAIN_BS=${TRAIN_BS:-8}
@@ -100,7 +107,7 @@ TRAIN_BS=${TRAIN_BS:-8}
 #     different TOTAL_STEPS makes the lr jump rather than continue.
 #   - min_lr_ratio=0.1 keeps a floor. At the default 0.0 the lr reaches
 #     exactly 0 at the last step, so a run that goes the distance spends its
-#     final steps not learning -- and this one is budgeted at ~52h, long
+#     final steps not learning -- and this one is budgeted at ~60h, long
 #     enough that being cut short is the likely outcome.
 MAX_USER_TURNS=${MAX_USER_TURNS:-3}
 # 267 steps = 2.00 epochs over the 1,068 rl_train prompts (batch 8), 34.2K
@@ -129,15 +136,30 @@ RESULT_NAME=${RESULT_NAME:-${EXP_NAME//_/-}}
 RESULT_DIR=${REPO}/results/${RESULT_NAME}
 
 mkdir -p "${RESULT_DIR}" logs
+
+# Disk guard. A checkpoint is ~17G and verl writes the new one before deleting
+# the old, so a save needs 2x that free. Warn rather than exit: resuming with a
+# tight disk is a legitimate thing to do, as long as you know it.
+_free_gb=$(df -BG --output=avail / | tail -1 | tr -d 'G ')
+_ckpts=$(ls -d "${RESULT_DIR}"/ckpt/global_step_* 2>/dev/null | wc -l)
+if [ "${_free_gb}" -lt 40 ]; then
+    echo "[warn] / has ${_free_gb}G free; a save needs ~34G (new + old side by side)." >&2
+    [ "${_ckpts}" -gt 1 ] && echo "[warn] ${_ckpts} checkpoints under ${RESULT_DIR}/ckpt -- retention is not pruning them. Delete all but the one named in latest_checkpointed_iteration.txt." >&2
+    echo "[warn] continuing anyway; check again after the next save." >&2
+fi
 export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
 
-# glibc 分配器：这两个是 2026-08-27 三次 CPU OOM 的解药，别删。
-# glibc 的 mmap 门槛是动态的——每释放一个大块就上调到那个块的大小（上限
-# 32MB）且只升不降。本项目的分配尺寸（单帧 588KB、crop 52MB）正落在这个区
-# 间，门槛一旦被顶到上限，后续分配改从堆里拿，free 后还不给内核，RSS 只涨
-# 不跌：实测 111 → 112 → 129 → 崩（182/188）。显式设置会关掉动态调整。
-# 加上之后 8 步实测：96→99→116→132→99→100→100→101，涨上去能回落。
-# 注意结尾的下划线是 glibc 的命名规范，漏了不生效且不报错。
+# glibc allocator. These two are the fix for the three CPU OOMs of 2026-08-27
+# (GRPO_NOTES.md 6); do not drop them. glibc's mmap threshold is dynamic: every
+# time an mmap'd block is freed the threshold rises to that block's size (32MB
+# ceiling) and never comes back down. This project's allocation sizes sit right
+# in that range -- 588KB per frame, 52MB per crop tensor -- so one free pins it
+# at the ceiling, after which everything smaller is served from the heap and
+# never returned to the kernel. RSS then only climbs: measured
+# 111 -> 112 -> 129 -> dead at 182/188G. Setting them explicitly disables the
+# ratchet; 8 steps after, 96->99->116->132->99->100->100->101, i.e. it goes up
+# and comes back down. The trailing underscore is glibc's naming convention --
+# omit it and the variable is silently ignored, with no error.
 export MALLOC_MMAP_THRESHOLD_=${MALLOC_MMAP_THRESHOLD_:-131072}
 export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
 
@@ -227,7 +249,7 @@ python3 -m verl.trainer.main_ppo \
     trainer.validation_data_dir="${RESULT_DIR}/val_rollouts" \
     data.val_batch_size=2 \
     trainer.val_before_train=True \
-    +trainer.max_ckpt_to_keep=1 \
+    +trainer.max_actor_ckpt_to_keep=1 \
     trainer.save_freq=20 \
     trainer.test_freq=20 \
     trainer.total_epochs=100 \

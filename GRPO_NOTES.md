@@ -1,200 +1,344 @@
-# GRPO 训练配置原理笔记（verl 0.9.0 / run_grpo.sh）
+# GRPO Configuration Notes (verl 0.9.0 / `run_grpo.sh`)
 
-2026-08-26 帧数压测期间整理。测量数据见 `FRAMES_SWEEP.md`，
-环境问题见 `env_setup/ENVIRONMENT.md` §8。
+Why each knob in `run_grpo.sh` is set the way it is. Measurements behind the
+numbers: `FRAMES_SWEEP.md` and `results/memtest/`. Environment failures:
+`env_setup/ENVIRONMENT.md` §8. Values quoted here are the script's current ones.
 
-## 1. 一个训练迭代的完整时序
+## 1. One training iteration
 
 ```
-① rollout      vLLM 生成 TRAIN_BS × K 条轨迹（多轮工具调用，agent loop）
-② old log_prob FSDP actor 纯前向，记录"旧策略"逐 token log_prob
-③ 算奖励+优势  按 prompt 分组，A = (r - 组均值) / 组标准差   ← GRPO 的全部
-④ actor 更新   PPO 裁剪目标：ratio=exp(new-old)，loss=-min(rA, clip(r)A)
+① rollout       vLLM generates TRAIN_BS × K trajectories (multi-turn agent loop)
+② old log_prob  FSDP actor, forward only — the "old policy" per-token log_prob
+③ advantage     group by prompt, A = (r − group mean) / group std   ← all of GRPO
+④ actor update  PPO clipped objective: ratio = exp(new − old), loss = −min(rA, clip(r)A)
 ```
 
-verl 的 trainer 本体是 PPO trainer，GRPO 只是 `algorithm.adv_estimator=grpo`
-——换掉③的优势算法（去掉 critic），④仍是 PPO 更新，所以 actor 侧配置都叫
-`ppo_*`。
+verl's trainer *is* the PPO trainer; `algorithm.adv_estimator=grpo` only swaps
+step ③ (and drops the critic). Step ④ is still PPO, which is why every actor-side
+key is named `ppo_*`.
 
-## 2. K（GROUP_SIZE / rollout.n）
+## 2. K — `GROUP_SIZE` / `rollout.n` = 16
 
-- 同一 prompt 并行采 K 条轨迹 = 一个 group；优势用组内相对分数算，K≥2。
-- 组内全对/全错 → 方差 0 → 无梯度信号，样本被跳过（judge 时代实测
-  仅 0.005%，见 DATA.md §6）。K 越大，难题越可能出现组内至少一条对 → 有效信号。
-- 成本：**GPU 显存基本免费**（vLLM 排队、训练按 token 装箱）；代价是每步
-  墙钟时间 ∝ K，以及 RAM ∝ 轨迹数×帧数（每条轨迹独立解码/持有视频张量）。
+K trajectories are sampled per prompt and form one group; the advantage is each
+trajectory's score relative to its group, so K ≥ 2 is required. If a group is
+uniformly right or uniformly wrong its variance is zero and it contributes no
+gradient — measured at 0.005% of the pool for this policy (DATA.md §6), so no
+difficulty filtering is worth a pass.
 
-## 3. 三层批次结构（最易混淆处）
+K is **free on the GPU** (vLLM queues the requests; training packs by token). It
+costs wall clock linearly, and host RAM through the trajectory count — every
+in-flight trajectory holds its decoded video frames as CPU tensors (§6). K is
+also the term that must not shrink, since the whole advantage estimate is a
+within-group comparison; batch size is the one to cut instead.
 
-| 层级 | 配置 | 单位 | 触发的动作 |
+## 3. Three levels of batching
+
+This is the easiest place to get confused, because all three are called "batch".
+
+| Level | Key | Unit | What it triggers |
 |---|---|---|---|
-| train batch | `data.train_batch_size` | prompt | ① rollout 采数据（on-policy 边界） |
-| mini-batch | `actor.ppo_mini_batch_size` | prompt（内部自动 ×K） | **一次 optimizer.step** |
-| micro-batch | `ppo_max_token_len_per_gpu` 动态装箱 | token | 一次 forward+backward（梯度累积） |
+| train batch | `data.train_batch_size` = 8 | prompts | one rollout — the on-policy boundary |
+| mini-batch | `actor.ppo_mini_batch_size` = 8 | prompts (×K internally) | **one `optimizer.step()`** |
+| micro-batch | `ppo_max_token_len_per_gpu` = 24576 | tokens, packed dynamically | one forward+backward (gradient accumulation) |
 
-- 约束只有一个：`train_batch_size % ppo_mini_batch_size == 0`。
-  每迭代更新次数 = train/mini（×`ppo_epochs`，默认 1）。
-- mini 单位是 prompt → 一个组永远不会被拆进两个 mini-batch
-  （ray_trainer.py:1328 `ppo_mini_batch_size *= rollout.n`）。
-- **不存在"攒够 train_batch_size 才 optimize"**：train 32 / mini 8 时，
-  一次迭代内部就有 4 次参数更新，后 3 次已轻微 off-policy，靠 PPO clip
-  兜底。我们配置 train==mini（1:1）→ 每迭代恰 1 次更新，最保守 on-policy。
+- The only constraint is `train_batch_size % ppo_mini_batch_size == 0`. Updates
+  per iteration = train / mini × `ppo_epochs` (default 1).
+- The mini-batch unit is *prompts*, so a group is never split across two
+  mini-batches (`ray_trainer.py:1328` multiplies it by `rollout.n` internally).
+- There is no "accumulate until train_batch_size, then optimise". With train 32 /
+  mini 8 there would be four parameter updates inside one iteration, the last
+  three already slightly off-policy with PPO clipping as the safety net. We set
+  **train == mini**, so each iteration is exactly one update: maximally
+  on-policy, and the simplest thing to reason about.
 
-## 4. backward ≠ 参数更新（梯度累积）
+## 4. Every token and batch parameter, in pipeline order
 
-`loss.backward()` 只把 ∂loss/∂θ **累加**进 `.grad`，参数不动；
-`optimizer.step()` 才改参数。梯度可加，所以：
+### Before ① — data boundary
+
+| Key | Value | Unit | Role |
+|---|---|---|---|
+| `data.train_batch_size` | 8 | prompts | prompts per step |
+| `rollout.n` (K) | 16 | per prompt | group size → **128 trajectories/step**, the source of every cost |
+| `data.max_prompt_length` | 4608 | tokens | prompt tensor width; overflow raises (`truncation=error`) |
+| `data.max_response_length` | 16384 | tokens | response tensor width |
+| `data.val_batch_size` | 2 | prompts | validation loader batch — **not** a row cap (see below) |
+
+### ① rollout — vLLM side
+
+| Key | Value | Role |
+|---|---|---|
+| `rollout.max_model_len` | 20992 | KV budget per sequence. Unset it falls back to 262144, whose single-sequence KV (~36 G) exceeds the pool and vLLM refuses to start |
+| `rollout.max_num_batched_tokens` | 24576 | token budget for **one engine forward**, shared by prefill and decode |
+| `rollout.max_num_seqs` | 256 (default) | concurrent sequence cap |
+| `rollout.enable_chunked_prefill` | True | slices long prompts so they can mix with decode |
+| `rollout.gpu_memory_utilization` | 0.65 | vLLM's total VRAM share, ~52 G |
+| `+rollout.limit_images` | 112 | images per request: 3 crops × 30 frames + slack |
+| `mm_processor_kwargs.max_pixels` | 150528 | size of the profiling dummy images; unset, vLLM profiles at the preprocessor default 16.7M px and eats the KV pool |
+| `multi_turn.max_user_turns` | 3 | at most 3 tool calls |
+| `multi_turn.max_assistant_turns` | 4 | 3 tool calls + the final answer |
+| `multi_turn.max_parallel_calls` | 1 | one tool call per turn |
+| `multi_turn.max_tool_response_length` | 2048 | truncation of the tool's **text** return (images are not counted) |
+
+`max_num_batched_tokens` is the vLLM scheduler's per-step token budget: prefill
+chunks and decode tokens draw on the same pool, with the running queue served
+first so in-flight sequences are not starved
+(`vllm/v1/core/sched/scheduler.py:408/432/629`). It has a second, VLM-only role
+that is easy to miss:
+
+```python
+max_num_encoder_input_tokens = encoder_cache_size = max_num_batched_tokens
+# vllm/config/scheduler.py:248-249
+```
+
+The ViT's input budget *and* its encode cache are both set to this value.
+Shrinking it makes vision encodings get evicted and recomputed — a sensitivity
+text-only models do not have.
+
+**`max_user_turns=3` is over-provisioned.** Across steps 1/20/40/55 (128
+trajectories each) the policy called the tool exactly once in every trajectory
+but one, which called it twice at step 20. `limit_images=112` and
+`MAX_RESP_LEN=16384` are budgeted for the same unused 3 calls. That is slack in
+the *token* budget only — crop frames are charged per actual call, so it does not
+cost RAM (§6).
+
+### ② log_prob — forward only
+
+| Key | Value | Role |
+|---|---|---|
+| `rollout.log_prob_use_dynamic_bsz` | True | enable packing |
+| `rollout.log_prob_max_token_len_per_gpu` | 24576 | tokens per bin (forward only, so it can be more aggressive than training) |
+
+### ③ advantage
+
+No token parameters — plain numpy, measured at 0.12 s. K enters via the `uid`
+grouping.
+
+### ④ update_actor
+
+Batching in §3, packing in §5. Two things worth knowing about where they land:
+
+- `optimizer.step()` lives in `engine/base.py:124-127`: `train_batch()` is
+  zero_grad → forward_backward over every bin → optimizer_step, **exactly once
+  per mini-batch**. The mini-batch count is
+  `data.shape[0] // mini_batch_size_per_gpu * ppo_epochs`
+  (`engine_workers.py:286`) — for us 128 // 128 × 1 = 1.
+- The lr scheduler advances only after the **last mini-batch of the step**
+  (`update_lr_scheduler = batch_idx == total_num_iterations - 1`,
+  `engine_workers.py:306`). So whatever the train/mini ratio, the cosine curve
+  follows *training steps*, and `TOTAL_STEPS` is a clean anneal denominator.
+
+### The three `max token` keys are three different things
+
+| | Key | Value | Who packs | Which memory |
+|---|---|---|---|---|
+| training | `actor.ppo_max_token_len_per_gpu` | 24576 | verl, Karmarkar-Karp, once after rollout | FSDP forward+backward activations |
+| forward | `rollout.log_prob_max_token_len_per_gpu` | 24576 | same | FSDP forward-only activations |
+| inference | `rollout.max_num_batched_tokens` | 24576 | **vLLM scheduler, re-formed every step** | vLLM prefill activations + ViT encode cache |
+
+They happen to be equal, but they are three parameters, three engines, three
+pools of memory; changing one does not affect the others. The first two pack
+offline (all the data is in hand, so bins can be balanced optimally); the third
+schedules online, without knowing what arrives next.
+
+### Constraint graph
 
 ```
-mini-batch 梯度 g = g₁+...+g₁₀
-每箱: forward → backward(.grad += gᵢ) → 该箱激活立即释放
-10 箱后: optimizer.step()  ← 与一次算完整个 mini-batch 逐位等价
+MAX_PROMPT_LEN(4608) + MAX_RESP_LEN(16384) = 20992
+   │
+   ├─→ rollout.max_model_len = 20992              exactly how the script computes it
+   │      └─ with chunked_prefill on, max_num_batched_tokens may be smaller
+   │
+   └─→ ppo / log_prob_max_token_len_per_gpu ≥ 20992
+          asserted at seqlen_balancing.py:384 — set it lower and the run dies
+
+max_num_batched_tokens(24576) ≥ max_num_seqs(256)      vLLM's own check
+train_batch_size(8) % ppo_mini_batch_size(8) == 0      the only batching constraint
 ```
 
-任意时刻卡上只有一箱（≤16384 token）的激活——显存被控制的全部原理。
+Packing counts **real tokens** (`attention_mask.sum()`), not padded width:
+measured 927,618 tokens / 24576 → 38 bins, ~3.4 sequences each (mean 7,247
+tok/sequence). So the `≥ 20992` constraint protects the worst case — one maximal
+sequence must fit in one bin — not the common case.
 
-## 5. 动态装箱（use_dynamic_bsz）
+**Changing the frame count cascades**: prompt ≈ 27 tok/frame + ~480 floor
+(FRAMES_SWEEP §1) → raise `MAX_PROMPT_LEN` → raise `max_model_len` → re-check
+both `*_max_token_len_per_gpu` against the inequality above. That chain is why
+the table exists.
 
-- 时机：**rollout 全部结束后**，每个 mini-batch 更新前一次性算好
-  （`rearrange_micro_batches`，Karmarkar-Karp 均衡分箱）。
-- 箱数 = `ceil(mini-batch 内 token 总数 / ppo_max_token_len_per_gpu)`，
-  每步都不同（轨迹长短随模型行为变）。smoke 实测：150K token / 16384
-  → 10 箱。
-- **这就是帧数扫描显存平坦的原因**：帧数↑ → 序列长 → 箱数多，
-  单箱 token 上限不变 → 单次前向激活峰值不变。
-- `ppo_max_token_len_per_gpu` 是纯硬件旋钮：调大→箱少→更快→激活显存高，
-  数学结果不变。硬约束：≥ 最长单条序列（MAX_PROMPT_LEN+MAX_RESP_LEN）。
-- `log_prob_max_token_len_per_gpu`：同逻辑用于②（纯前向，可更激进）。
-- 静态模式 `ppo_micro_batch_size_per_gpu`（固定每箱条数）与动态二选一；
-  RL 序列长短差几十倍，动态是唯一合理选择。
+### Open item: `val_batch_size=2` wastes 3.8×
 
-## 6. AgentLoopWorker（rollout.agent.num_workers，默认 8）
+`_validate` pads the val batch up to `rollout.agent.num_workers` = 8
+(`ray_trainer.py:637-638`), and `pad_dataproto_to_divisor` pads by **duplicating
+real rows** (`protocol.py:74`). The duplicates decode their videos and run
+through vLLM in full; only after generation does `unpad_dataproto` discard them.
 
-rollout 的 CPU 侧执行进程：解码全局视频 → 拼 prompt → HTTP 调 vLLM →
-解析 tool call → 执行 crop_video → 拼回对话循环。每进程 asyncio 并发 +
-≤32 线程解码池 → 默认最多 ~256 路并发视频解码。**高帧数下 RAM 的第一
-杀手**（第二杀手是 rollout 产物 pixel tensor ∝ TRAIN_BS×K×F，限流救不了，
-见 FRAMES_SWEEP §3）。与 PyTorch DataLoader 的 num_workers 无关。
+| `val_batch_size` | batches | actually generated | wasted | peak concurrency |
+|---|---:|---:|---:|---:|
+| 2 (current) | 57 | 456 | **342 (75%)** | 8 |
+| 8 | 15 | 120 | 6 | 8 |
+| unset (=114) | 1 | 120 | 6 | **114 → OOM** |
 
-**2026-08-27 实测证实了"第二杀手"，而且它才是真正的上限**：F=128 下
-TRAIN_BS=16×K=16（256 轨迹）在 step 1 的 vLLM 权重同步处 OOM——188G 的机器
-用到 181G，其中 TaskRunner 独占 95.8G。降到 8×16（128 轨迹）峰值 132G，
-留 56G 余量。**瓶颈完全在 CPU，GPU 全程只用 45–57G/80G**，所以调
-`GPU_MEM_UTIL` 之类的旋钮无效，唯一有效的是每步轨迹数。
+2 was chosen to hold concurrency down (validation at `test_freq=20` runs with the
+training state resident). But **the pad to 8 is a floor** — 2 cannot go below it.
+Peak concurrency is identical to 8; the only difference is 3.8× duplicated
+trajectories. Validation fires 8 times over the run, so setting it to 8 is free.
+Not changed yet: `grpo_vanilla` is running, and Hydra reads the config at launch.
 
-## 6.5 CPU 内存耗尽：已解决（2026-08-27）
+## 5. Gradient accumulation and dynamic packing
 
-**结论先行**：解药是两个 glibc 环境变量，已写进 `run_grpo.sh`。降 batch 和
-关 offload 都不是解法——后者是速度优化，前者只是把死亡时间往后推。
+`loss.backward()` only **accumulates** ∂loss/∂θ into `.grad`; parameters do not
+move until `optimizer.step()`. Gradients add, so:
 
-### 现象
+```
+mini-batch gradient g = g₁ + … + g₃₈
+per bin:  forward → backward (.grad += gᵢ) → that bin's activations freed
+after 38: optimizer.step()   ← bit-for-bit the same as one giant batch
+```
 
-三次崩溃，全部是 CPU RAM 打满 188G，**全部在同一位置**——一步训练结束、
-唤醒 vLLM 同步权重时（`actor_rollout_update_weights` → `wake_up`）。GPU 全程
-平稳且只用 39–57/80G，所以调显存旋钮无效。
+Only one bin's activations (≤24,576 tokens) are ever resident. That is the whole
+mechanism by which VRAM is bounded — and the reason the frame sweep found VRAM
+flat: more frames means longer sequences means *more bins*, while the per-bin
+token ceiling, and therefore the activation peak, does not move.
 
-| 配置 | 死在第几步 |
+Packing (`use_dynamic_bsz`) is computed once per mini-batch after rollout
+finishes (`rearrange_micro_batches`, Karmarkar-Karp balancing), so the bin count
+differs every step as trajectory lengths change.
+`ppo_max_token_len_per_gpu` is a pure hardware knob: larger → fewer bins →
+faster, more activation memory, identical math. Hard floor: the longest single
+sequence, i.e. `MAX_PROMPT_LEN + MAX_RESP_LEN`. The static alternative
+(`ppo_micro_batch_size_per_gpu`, a fixed sequence count per bin) is mutually
+exclusive with it and a poor fit here, where RL sequence lengths vary by tens of
+times.
+
+## 6. Host RAM is the bottleneck — diagnosed and fixed 2026-08-27
+
+`rollout.agent.num_workers` (default 8) are the CPU-side rollout processes:
+decode the global video → build the prompt → call vLLM over HTTP → parse the
+tool call → run `crop_video` → loop. Each runs asyncio concurrency over a ≤32
+thread decode pool, so ~256 concurrent video decodes by default. (Unrelated to
+the PyTorch DataLoader's `num_workers`.)
+
+**GPU was never the constraint**: 45–57 G of 80 G throughout. Three consecutive
+crashes were all CPU RAM hitting 188 G, and all at the same point — end of a
+training step, waking vLLM to sync weights (`actor_rollout_update_weights` →
+`wake_up`).
+
+| Config | Died at |
 |---|---|
-| batch 16 × K16 = 256 轨迹 | step 1（182.2G） |
-| batch 8 × K16 = 128 轨迹 | step 4（182.2G） |
+| batch 16 × K16 = 256 trajectories | step 1 (182.2 G) |
+| batch 8 × K16 = 128 trajectories | step 4 (182.2 G) |
 
-内存逐步累积，不是稳态高位：`111.1 → 111.8 → 129.1 → 崩`。
+Memory ratcheted rather than sitting high: `111.1 → 111.8 → 129.1 → dead`.
 
-### 根因：glibc 的 mmap 门槛棘轮
+### Root cause: glibc's mmap threshold ratchets
 
-malloc 有两条路拿内存。**堆（brk）**只能从堆顶收缩，中间的空洞被上面的块夹
-着还不掉；**mmap** 是独立映射，`free` 时 `munmap` 直接还给内核，与位置无关。
+malloc has two sources. The **heap (brk)** can only shrink from the top, so a
+freed block with live blocks above it is not returned. **mmap** allocations are
+independent mappings that `munmap` returns to the kernel on `free`, regardless of
+position.
 
-走哪条由门槛决定（默认 128KB），**但这个门槛是动态的**：每释放一个 mmap
-块就上调到该块大小（上限 32MB），且只升不降。本项目的分配尺寸——单帧
-588KB、crop 张量 52MB——正落在这个区间。一个 52MB 的块释放一次，门槛就被
-顶到 32MB 上限，此后所有中小分配改从堆里拿，free 后不归还内核。
+Which one is used depends on a threshold (default 128 KB) — and that threshold is
+**dynamic**: every time an mmap'd block is freed it is raised to that block's
+size, up to 32 MB, and it never comes back down. This project's allocation sizes
+sit right in that range: 588 KB per frame, 52 MB per crop tensor. One 52 MB free
+pushes the threshold to its 32 MB ceiling, and from then on everything smaller
+comes from the heap and is never returned. Short-lived video frames interleaved
+with long-lived rollout buffers means the long-lived ones pin the gaps, and RSS
+only climbs.
 
-视频帧（短命）和 rollout 缓冲（长命）交替分配，长命的把短命的空洞全锁死，
-RSS 只涨不跌。
-
-**解法**（`run_grpo.sh` 已设，`${VAR:-默认}` 形式，可被环境覆盖）：
+**Fix** (set in `run_grpo.sh`, in `${VAR:-default}` form so it stays overridable):
 
 ```bash
-export MALLOC_MMAP_THRESHOLD_=131072      # 钉死 128KB，关掉动态调整
-export MALLOC_TRIM_THRESHOLD_=134217728   # 堆顶空闲超 128MB 归还内核
+export MALLOC_MMAP_THRESHOLD_=131072      # pin at 128 KB, disable the ratchet
+export MALLOC_TRIM_THRESHOLD_=134217728   # return heap top to the kernel past 128 MB free
 ```
 
-结尾下划线是 glibc 的命名规范，**漏了不生效且不报错**。
+The trailing underscore is glibc's naming convention. **Omit it and the variable
+is silently ignored.**
 
-**实测（8 步，batch 8 × K16，其余不变）**：
+Measured over 8 steps (batch 8 × K16, nothing else changed):
 
 | step | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 加之前 | 111.1 | 111.8 | 129.1 | 崩 | | | | |
-| 加之后 | 96.5 | 98.8 | 115.6 | 132.0 | 99.3 | 100.1 | 100.0 | 100.7 |
+| before | 111.1 | 111.8 | 129.1 | dead | | | | |
+| after | 96.5 | 98.8 | 115.6 | 132.0 | 99.3 | 100.1 | 100.0 | 100.7 |
 
-形态变了：从只涨不跌，变成涨到 132 后回落、并在 99–101 稳住（波动 1.4G）。
-step 5 之后瞬时峰值不超过 149.8G，离 182 有 32G 余量。
+The shape changed: instead of climbing monotonically it peaks at 132 and falls
+back, settling at 99–101 G (±1.4 G). After step 5 the instantaneous peak stays
+under 149.8 G, 32 G clear of the wall.
 
-### 一个判断失误（留档）
+### One wrong hypothesis, kept on the record
 
-我当时看到峰值时刻 `WorkerDict 45.7G` 出现在 compute_log_prob 阶段，推断
-"这是被 offload 到 CPU 的参数，关掉能省 45G"，并把它列为首要修复方向。
+Seeing `WorkerDict 45.7 G` at the peak during `compute_log_prob`, I concluded
+those were parameters offloaded to CPU and that disabling offload would recover
+45 G. A controlled run disproved it outright:
 
-`param_offload=False` 的对照实验直接证伪：
-
-| | offload=True | offload=False | 差 |
+| | offload=True | offload=False | Δ |
 |---|---:|---:|---:|
-| 内存峰值 | 175.3G | 171.3G | −4.0 |
-| WorkerDict 最大 PSS | 38.4G | 37.9G | **−0.5** |
-| 每步末内存 | 96.5/98.8/115.6/132.0 | 97.3/98.0/114.6/131.3 | 几乎相同 |
+| peak memory | 175.3 G | 171.3 G | −4.0 |
+| WorkerDict peak PSS | 38.4 G | 37.9 G | **−0.5** |
+| per-step end | 96.5/98.8/115.6/132.0 | 97.3/98.0/114.6/131.3 | ~identical |
 
-错在把"offload 的目的地"和"WorkerDict 的 CPU 占用"当成同一件事。那个阶段
-参数本来就在 GPU 上（正在算前向），CPU 侧那 38G 是 FSDP 的内部结构和通信
-缓冲，与参数放哪儿无关。
+The error was equating "where offload puts things" with "what WorkerDict holds on
+the CPU". At that phase the parameters are on the GPU by definition — the forward
+pass is running. The 38 G is FSDP scaffolding and communication buffers, which
+exist wherever the parameters live. (Offload was disabled anyway, for speed: §7.)
 
-### 方法教训
+### Two method lessons
 
-3 步的 smoke 峰值 132G、看着有 56G 余量，据此判定"128 轨迹可行"——它恰好
-停在悬崖前一步（step 4 就崩）。**验证长跑的 smoke 必须长于故障周期**，这里
-至少 5 步。
+- **A smoke must outlive the failure period it is meant to rule out.** The 3-step
+  smoke peaked at 132 G and looked like it had 56 G of headroom. It had stopped
+  one step short of the cliff.
+- **Measure PSS, not RSS.** RSS charges a shared page to every process mapping
+  it, so summing over a parent and its forked children double-counts — the
+  "TaskRunner is using 75 G" reading that started this investigation was an RSS
+  artifact. PSS divides each page by its sharers, so the sum is real physical
+  usage. Sampler and both runs' curves: `results/memtest/`.
 
-### 测量工具
+## 7. What was done with the GPU headroom
 
-用 **PSS 而不是 RSS**。RSS 把共享页算给每一个共享者，父子进程 fork 后相加会
-重复计算（"TaskRunner 75G"因此虚高）。PSS 按共享者数量均摊，求和才是真实
-物理占用。采样脚本和两次实验的曲线在 `results/memtest/`。
+The sweep left ~40 G of the card unused, and §7 originally listed four ways to
+spend it. Once the bottleneck turned out to be CPU RAM (§6), most of them stopped
+mattering. Current state:
 
-## 7. GPU 余量（80G 只用 ~39G）怎么花
+- **`GPU_MEM_UTIL` 0.45 → 0.65** — done. KV pool 23 G → 39 G, roughly doubling
+  rollout concurrency, which is the largest share of step time. Safe because the
+  phases are disjoint: the actor is out of the way during rollout, vLLM sleeps
+  during training.
+- **`enable_prefix_caching`** — verl enables it by default, nothing to do. GRPO
+  benefits structurally: the K trajectories of a group share one video prompt
+  prefix, so its KV is computed and stored once.
+- **`ppo`/`log_prob_max_token_len_per_gpu`** — left at 24576, not raised to
+  32768. Fewer bins would speed up training, but the constraint is not GPU time.
+- **`param_offload` / `optimizer_offload` → False** — done, and the reasoning
+  that had kept them on was wrong. It assumed the optimizer needed ~16 G resident
+  alongside vLLM; that is the full-finetuning figure. This is LoRA — only the
+  adapter is trainable, and the optimizer state measures 265 MiB. Resident need
+  is ~18 G against the 80 − 52 = 28 G that survives vLLM waking. Measured after
+  the change: 73.5 / 80 G peak, identical on all four measured steps
+  (deterministic, not load-dependent), and 91 s/step faster from not shuttling
+  35 G of parameters across PCIe twice per step. If that margin is ever too thin,
+  `gpu_memory_utilization=0.55` buys back ~8 G.
 
-按性价比：
+## 8. Miscellaneous
 
-1. `GPU_MEM_UTIL` 0.45→0.65：KV 池 23G→39G，rollout 并发翻倍（步时大头）。
-   安全：rollout 时 actor 已 offload，训练时 vLLM 睡眠，两相错开。
-2. `enable_prefix_caching`：**verl 默认已开**，无需动。GRPO 天然受益——
-   组内 K 条轨迹共享同一视频 prompt 前缀，KV 只算/存一份。
-3. `ppo/log_prob_max_token_len_per_gpu` 16384→32768：箱数减半，训练/重算
-   提速；激活 ~30G→~50G，训练阶段独占 GPU 放得下。
-4. 关 `optimizer_offload`（省 CPU↔GPU 搬运）与 #1 冲突：rollout 阶段
-   优化器 16G 要与 vLLM 共存，0.65 util 下放不下。优先 #1，offload 保持。
-
-**现状（2026-08-27）**：#1 已落地（`GPU_MEM_UTIL=0.65`），#2 本就默认开，
-两个 token_len 停在 24576 而非 32768。
-
-**#4 的前提是错的**：它写着"rollout 阶段优化器 16G 要与 vLLM 共存，放不
-下"——16G 是**全参微调**的量级。本项目是 LoRA，只有 adapter 可训练，优化器
-状态实测 265 MiB，差 60 倍。常驻需求约 18G，而 vLLM 醒来后仍余 80−52=28G，
-本来就放得下。offload 已于同日关闭，实测显存峰值 73.5/80G，4 步全部相同
-（确定性负载，不随轨迹长短波动）。收益是每步快 91 秒。
-
-另外 §7 整体是在"瓶颈在 GPU"的前提下写的。实测瓶颈在 CPU（见 §6.5），
-GPU 全程余 20–70G，所以 #3 那类"把 GPU 余量花掉"的建议已无意义。
-
-## 8. 杂项
-
-- 显存碎片：GRPO 侧**不要**手动 export `PYTORCH_CUDA_ALLOC_CONF=
-  expandable_segments:True`（run_sft.sh 加了是因为 SFT 无 vLLM）。verl 在
-  hybrid worker 里运行时动态开关：训练阶段开（防碎片），vLLM 唤醒/权重
-  同步窗口关（睡眠模式 CuMemAllocator 冲突）。engine_workers.py:760/805。
-
-- `agentic_tvg` 是 editable 安装：改 `.py` 下次启动进程即生效，无需重装
-  （改 pyproject 才需要）。但 `prompts.py`/`constants.py` 的字符串已烘焙
-  进 parquet——改它们必须按 PLAN §4 重渲染数据，代码生效≠数据一致。
-- verl 本体是 wheel 安装：多图补丁直接改了 site-packages
-  （ENVIRONMENT.md §8.4），pip 重装会冲掉，preflight 有守卫。
+- **Do not export `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` here.**
+  (`run_sft.sh` does, because SFT has no vLLM.) verl toggles it at runtime inside
+  the hybrid worker: on during training phases for fragmentation control, off
+  around vLLM wake and weight sync, where it conflicts with sleep-mode
+  CuMemAllocator. A global export leaks into the vLLM process and hits exactly
+  that conflict. `engine_workers.py:760/805`.
+- **`agentic_tvg` is an editable install** — a `.py` edit takes effect on the next
+  process start, no reinstall (only `pyproject` changes need one). But the strings
+  in `prompts.py` / `constants.py` are already baked into the parquet files:
+  changing them requires re-rendering the data per PLAN §4. Code taking effect is
+  not the same as data being consistent.
+- **verl itself is a wheel install**, and the multi-image tool-response fix is a
+  direct edit to site-packages (ENVIRONMENT.md §8.4). A pip reinstall wipes it;
+  preflight guards against running without it.
+- **Config keys that are wrong but legal fail silently.** The PPO trainer reads
+  `trainer.max_actor_ckpt_to_keep`; the SFT trainer's name is
+  `trainer.max_ckpt_to_keep`. Copying the SFT name over cost a run on 2026-08-27
+  — Hydra's `+` created the key, nothing read it, and 17 G checkpoints piled up
+  until the disk hit 93%. Verify with `ls results/<run>/ckpt` after the second
+  save, not by re-reading the override list.

@@ -23,7 +23,7 @@ agentic_tvg/              core library (pip install -e .)
 prepare_data.sh           downloads + renders all training data
 data_prep/                render_traces.py (SFT) · extract_rl.py (RL)
 run_sft.sh                SFT (SMOKE=1 for a 2-step smoke)
-export_adapter.py         SFT checkpoint -> merged HF model for GRPO to start from
+merge_adapter.py         SFT checkpoint -> merged HF model for GRPO to start from
 run_grpo.sh               GRPO (trainer.val_only=True turns it into the evaluator)
 plot_sft.py plot_grpo.py  console log -> curves.png + metrics.csv
 results/<run>/            ckpt/ + curves + metrics + config snapshot per run
