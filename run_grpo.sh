@@ -163,11 +163,18 @@ export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
 export MALLOC_MMAP_THRESHOLD_=${MALLOC_MMAP_THRESHOLD_:-131072}
 export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
 
-# - +ray_kwargs.ray_init.object_store_memory=40GiB   -> cap Ray's plasma store.
+# - +ray_kwargs.ray_init.object_store_memory=24GiB   -> cap Ray's plasma store.
 #   Default is 30% of node RAM (53.4G here), and its tmpfs arena only grows --
 #   pages once touched are never returned, so the ceiling IS the cost. Measured
 #   2026-08-28: one step's DataProto is a single 16.5G object, /dev/shm high
-#   water after 67 steps was 20G, so 40G holds two generations with 2x margin.
+#   water after 67 steps was 20G. Was 40G ("two generations with 2x margin");
+#   that sizing turned every late ref-release into +16.5G of floor, permanently
+#   -- the arena absorbed the overlap in RAM and never gave it back. Both OOM
+#   kills (08-28 22:26 step ~122, 08-29 04:14 step ~141) were two such misses
+#   plus one save/wake transient over the 95% line; per-step tokens/turns were
+#   identical, so the miss rate is pure timing variance, not workload growth.
+#   At 24G an overlap cannot be absorbed: Ray spills the old object to SSD
+#   (~30s, roughly once per 20-60 steps) and the ceiling stops random-walking.
 #   ray_init is **kwargs-forwarded to ray.init() (main_ppo.py:75); the key is
 #   real (inspect.signature confirms). If it ever overflows the symptom is an
 #   explicit ObjectStoreFullError, not a silent OOM.
@@ -190,7 +197,7 @@ export MALLOC_TRIM_THRESHOLD_=${MALLOC_TRIM_THRESHOLD_:-134217728}
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    +ray_kwargs.ray_init.object_store_memory=42949672960 \
+    +ray_kwargs.ray_init.object_store_memory=25769803776 \
     algorithm.use_kl_in_reward=False \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${VAL_FILE}" \

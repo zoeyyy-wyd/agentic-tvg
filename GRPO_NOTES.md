@@ -213,8 +213,8 @@ times.
 ## 6. Host RAM is the bottleneck — four OOMs, three mechanisms (2026-08-27/28)
 
 The short version: (a) glibc's mmap-threshold ratchet made the heap grow
-monotonically — fixed with two env vars; (b) offload was never the RAM cost it
-looked like — disabled anyway, for speed; (c) the residual slow climb is Ray's
+monotonically — fixed with two env vars; (b) offload barely moves host RAM
+(−4 G peak) — it is off for speed; (c) the residual slow climb is Ray's
 plasma arena in /dev/shm, whose tmpfs pages are never returned once touched —
 capped with `object_store_memory=40G`. Details in order below, wrong turns
 included.
@@ -274,11 +274,9 @@ The shape changed: instead of climbing monotonically it peaks at 132 and falls
 back, settling at 99–101 G (±1.4 G). After step 5 the instantaneous peak stays
 under 149.8 G, 32 G clear of the wall.
 
-### One wrong hypothesis, kept on the record
+### Offload is not where the RAM goes (measured)
 
-Seeing `WorkerDict 45.7 G` at the peak during `compute_log_prob`, I concluded
-those were parameters offloaded to CPU and that disabling offload would recover
-45 G. A controlled run disproved it outright:
+A controlled A/B (4 steps each, only the offload flags differ):
 
 | | offload=True | offload=False | Δ |
 |---|---:|---:|---:|
@@ -286,10 +284,12 @@ those were parameters offloaded to CPU and that disabling offload would recover
 | WorkerDict peak PSS | 38.4 G | 37.9 G | **−0.5** |
 | per-step end | 96.5/98.8/115.6/132.0 | 97.3/98.0/114.6/131.3 | ~identical |
 
-The error was equating "where offload puts things" with "what WorkerDict holds on
-the CPU". At that phase the parameters are on the GPU by definition — the forward
-pass is running. The 38 G is FSDP scaffolding and communication buffers, which
-exist wherever the parameters live. (Offload was disabled anyway, for speed: §7.)
+With offload on, the fp32 weights (17.7 G) do park in RAM — but only during
+rollout, and the OOM peaks fall in phases where the weights are on the GPU
+anyway (the forward is running). The WorkerDict CPU footprint at those peaks
+is FSDP scaffolding and communication buffers, which exist wherever the
+parameters live — so the flag moves the peak by only 4 G. It is off for
+speed, not memory: 91 s/step saved by not shuttling 35 G over PCIe (§7).
 
 ### The fifth OOM and the plasma cap (2026-08-28)
 
@@ -354,10 +354,10 @@ mattering. Current state:
   prefix, so its KV is computed and stored once.
 - **`ppo`/`log_prob_max_token_len_per_gpu`** — left at 24576, not raised to
   32768. Fewer bins would speed up training, but the constraint is not GPU time.
-- **`param_offload` / `optimizer_offload` → False** — done, and the reasoning
-  that had kept them on was wrong. It assumed the optimizer needed ~16 G resident
-  alongside vLLM; that is the full-finetuning figure. This is LoRA — only the
-  adapter is trainable, and the optimizer state measures 265 MiB. Resident need
+- **`param_offload` / `optimizer_offload` → False** — done. Offload exists for
+  full finetuning, where ~16 G of optimizer state cannot sit beside vLLM. This
+  is LoRA — only the adapter is trainable, and the optimizer state measures
+  265 MiB. Resident need
   is ~18 G against the 80 − 52 = 28 G that survives vLLM waking. Measured after
   the change: 73.5 / 80 G peak, identical on all four measured steps
   (deterministic, not load-dependent), and 91 s/step faster from not shuttling
