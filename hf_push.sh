@@ -13,7 +13,7 @@ set -euo pipefail
 
 # ============================ 改这里 ============================
 HF_TOKEN="${HF_TOKEN:-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}"                              # https://huggingface.co/settings/tokens 选 Write
-REPO_ID="zoeyyy-wyd/agentic-tvg-grpo"                   # 目标仓库，不存在会自动建成私有
+REPO_ID="zoeyyy-wyd/agentic-tvg-grpo-160"                   # 目标仓库，不存在会自动建成私有
 LOCAL_PATH="./results/grpo-vanilla"                # 要传的目录或文件
 # ===============================================================
 

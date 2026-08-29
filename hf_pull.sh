@@ -12,7 +12,7 @@ set -euo pipefail
 # ============================ 改这里 ============================
 HF_TOKEN="${HF_TOKEN:-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}"                              # 同一个 token，Read 权限就够
 REPO_ID="zoeyyy-wyd/agentic-tvg-grpo"              # 跟 hf_push.sh 里填的一致
-DEST="./results/grpo-vanilla"                                    # 下载到哪
+DEST="./results/grpo-vanilla-1"                                    # 下载到哪
 # ===============================================================
 
 die() { echo "错误: $*" >&2; exit 1; }
