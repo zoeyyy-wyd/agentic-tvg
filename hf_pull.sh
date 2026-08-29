@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Download a checkpoint from a private HuggingFace repo. Run on your LOCAL machine.
 #
-# Pair of hf_push.sh. Edit the three values below, then: bash hf_pull.sh
+# Pair of hf_push.sh. Put HF_TOKEN in .env, edit the two values below, then:
+# bash hf_pull.sh
 #
 # Portability: this one runs on your laptop, so it avoids the GNU-only flags
 # (du -sb, find -printf) that hf_push.sh uses freely on the Linux box, and it
@@ -9,15 +10,42 @@
 
 set -euo pipefail
 
+# HF_TOKEN comes from the repo-root .env (gitignored, chmod 600) -- the same
+# file and the same precedence as agentic_tvg/judge.py::_load_dotenv: a value
+# already exported in the shell wins over the file. It is deliberately not a
+# literal in this script any more. An earlier revision had one here, and since
+# the script is tracked, a live Write token went to GitHub with it.
+ENV_FILE="$(dirname "$0")/.env"
+
+trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[![:space:]]}"}"; }
+
+load_dotenv() {
+    local envf="$1" line k v
+    [ -f "${envf}" ] || return 0
+    while IFS= read -r line || [ -n "${line}" ]; do
+        line="$(trim "${line}")"
+        case "${line}" in ''|'#'*) continue ;; esac
+        [[ "${line}" == *=* ]] || continue
+        line="${line#export }"
+        k="$(trim "${line%%=*}")"
+        v="$(trim "${line#*=}")"
+        v="${v%\"}"; v="${v#\"}"; v="${v%\'}"; v="${v#\'}"
+        if [ -n "${k}" ] && [ -n "${v}" ] && [ -z "${!k:-}" ]; then
+            export "${k}=${v}"
+        fi
+    done < "${envf}"
+}
+
+load_dotenv "${ENV_FILE}"
+
 # ============================ 改这里 ============================
-HF_TOKEN="${HF_TOKEN:-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}"                              # 同一个 token，Read 权限就够
 REPO_ID="zoeyyy-wyd/agentic-tvg-grpo"              # 跟 hf_push.sh 里填的一致
 DEST="./results/grpo-vanilla-1"                                    # 下载到哪
 # ===============================================================
 
 die() { echo "错误: $*" >&2; exit 1; }
 
-[ -n "${HF_TOKEN}" ] || die "HF_TOKEN 是空的。https://huggingface.co/settings/tokens"
+[ -n "${HF_TOKEN:-}" ] || die "HF_TOKEN 没设。在 ${ENV_FILE} 里加一行 HF_TOKEN=hf_xxx（Read 权限就够），或者 export HF_TOKEN"
 [[ "${REPO_ID}" == your-username/* ]] && die "REPO_ID 还是占位符"
 command -v hf >/dev/null || die "找不到 hf。先跑: pip install -U 'huggingface_hub[hf_xet]'"
 

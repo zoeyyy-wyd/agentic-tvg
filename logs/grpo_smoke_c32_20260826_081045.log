@@ -1,0 +1,6 @@
+Could not append to config. An item is already at 'actor_rollout_ref.rollout.limit_images'.
+Either remove + prefix: 'actor_rollout_ref.rollout.limit_images=112'
+Or add a second + to add or override 'actor_rollout_ref.rollout.limit_images': '++actor_rollout_ref.rollout.limit_images=112'
+
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.

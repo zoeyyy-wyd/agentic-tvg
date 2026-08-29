@@ -55,12 +55,6 @@ cover/
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
 # Flask stuff:
 instance/
 .webassets-cache
@@ -221,7 +215,6 @@ models/
 data/
 outputs/
 ckpts/
-logs/
 
 # results/<run>/ is committed -- curves.png, metrics.csv, the config snapshot.
 # Not the 19G checkpoint or the raw console dump that live alongside them.
