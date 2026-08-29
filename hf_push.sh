@@ -12,11 +12,15 @@
 
 set -euo pipefail
 
-# HF_TOKEN comes from the repo-root .env (gitignored, chmod 600) -- the same
-# file and the same precedence as agentic_tvg/judge.py::_load_dotenv: a value
-# already exported in the shell wins over the file. It is deliberately not a
-# literal in this script any more. An earlier revision had one here, and since
-# the script is tracked, a live Write token went to GitHub with it.
+# HF_TOKEN comes from the repo-root .env (gitignored, chmod 600), not from a
+# literal here: this script is tracked, so an earlier revision's hardcoded
+# token went to GitHub with it and stayed live in the history.
+#
+# Same file and same precedence as agentic_tvg/judge.py::_load_dotenv -- a
+# value already exported in the shell wins. One deliberate difference: an
+# exported-but-empty var falls through to .env here, where judge.py would
+# defer to it, because deferring turns a set-but-blank HF_TOKEN into a
+# "HF_TOKEN 没设" that is very hard to read.
 ENV_FILE="$(dirname "$0")/.env"
 
 trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; printf '%s' "${s%"${s##*[![:space:]]}"}"; }
