@@ -55,7 +55,7 @@ load_dotenv() {
 load_dotenv "${ENV_FILE}"
 
 # ============================ 改这里 ============================
-REPO_ID="zoeyyy-wyd/agentic-tvg-grpo-160"                   # 目标仓库，不存在会自动建成私有
+REPO_ID="zoeyyy-wyd/agentic-tvg-grpo-final"                   # 目标仓库，不存在会自动建成私有
 LOCAL_PATH="./results/grpo-vanilla"                # 要传的目录或文件
 # ===============================================================
 
