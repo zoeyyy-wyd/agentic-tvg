@@ -35,6 +35,16 @@ load_dotenv() {
         line="${line#export }"
         k="$(trim "${line%%=*}")"
         v="$(trim "${line#*=}")"
+        # Strip a trailing inline comment before the quotes, which judge.py's
+        # loader does not do. The placeholder line written into .env for this
+        # script carried a "# ... ，Write 权限" on the same line as the value; it
+        # rode into HF_TOKEN and came back from the Hub client as "'ascii' codec
+        # can't encode character '\uff0c'" -- the fullwidth comma, four layers
+        # away from anything that looked like a .env problem.
+        case "${v}" in
+            \"*|\'*) ;;                        # quoted: a # inside is literal
+            *[[:space:]]#*) v="$(trim "${v%%[[:space:]]#*}")" ;;
+        esac
         v="${v%\"}"; v="${v#\"}"; v="${v%\'}"; v="${v#\'}"
         if [ -n "${k}" ] && [ -n "${v}" ] && [ -z "${!k:-}" ]; then
             export "${k}=${v}"
@@ -60,6 +70,7 @@ cd "$(dirname "$0")"
 die() { echo "错误: $*" >&2; exit 1; }
 
 [ -n "${HF_TOKEN:-}" ] || die "HF_TOKEN 没设。在 ${ENV_FILE} 里加一行 HF_TOKEN=hf_xxx （Write token: https://huggingface.co/settings/tokens），chmod 600 ${ENV_FILE}；或者 export HF_TOKEN"
+[[ "${HF_TOKEN}" =~ ^hf_[A-Za-z0-9]+$ ]] || die "HF_TOKEN 里混进了 token 以外的字符（长度 ${#HF_TOKEN}）。${ENV_FILE} 里那一行的值只能是 token 本身"
 [[ "${REPO_ID}" == your-username/* ]] && die "REPO_ID 还是占位符，改成你自己的用户名"
 [ -e "${LOCAL_PATH}" ] || die "LOCAL_PATH 不存在: ${LOCAL_PATH}"
 command -v hf >/dev/null || die "找不到 hf 命令。pip install -U 'huggingface_hub[hf_xet]'"
@@ -75,14 +86,27 @@ unset HF_HUB_ENABLE_HF_TRANSFER || true
 python -c "import hf_xet" 2>/dev/null \
     || echo "[warn] 未装 hf_xet，上传会走慢速路径: pip install -U 'huggingface_hub[hf_xet]'"
 
-echo "帐号: $(hf auth whoami 2>&1 | head -1)"
-[[ "$(hf auth whoami 2>&1 | head -1)" == *"Not logged in"* ]] && die "token 无效或已过期"
+# `awk NR==1`, not `head -1`: head closes the pipe after one line, and when the
+# writer is still going that SIGPIPE (141) becomes the pipeline's status under
+# pipefail. awk reads to EOF. Called once and kept, too -- it was two network
+# round trips for one answer.
+whoami_line=$(hf auth whoami 2>&1 | awk 'NR==1')
+echo "帐号: ${whoami_line}"
+case "${whoami_line}" in
+    *"Not logged in"*|*Error*|*Invalid*) die "token 无效或已过期: ${whoami_line}" ;;
+esac
 
 bytes=$(du -sb "${LOCAL_PATH}" | cut -f1)
 gib=$(awk "BEGIN{printf \"%.1f\", ${bytes}/2^30}")
 # 40 MB/s measured against the Hub from this host on 2026-08-28.
 eta=$(awk "BEGIN{printf \"%.0f\", ${bytes}/40/1048576/60}")
-biggest=$(find "${LOCAL_PATH}" -type f -printf "%s\t%p\n" | sort -rn | head -1)
+# One awk pass instead of `sort -rn | head -1`. That pipeline was the bug: sort
+# writes in chunks, head -1 exits after the first, and the resulting SIGPIPE ->
+# pipefail -> set -e killed the script from inside a $() with nothing printed --
+# right after the 帐号 line, on 49 of 200 runs measured here. Same output shape
+# (size TAB path), and it does not sort 268 lines to keep one.
+biggest=$(find "${LOCAL_PATH}" -type f -printf "%s\t%p\n" \
+    | awk -F'\t' '$1 > m {m = $1; p = $2} END {print m "\t" p}')
 echo "上传  : ${LOCAL_PATH}  ->  ${REPO_ID}  (私有)"
 echo "大小  : ${gib} GiB, $(find "${LOCAL_PATH}" -type f | wc -l) 个文件, 预计 ~${eta} 分钟"
 echo "最大文件: $(awk -v b="${biggest%%	*}" 'BEGIN{printf "%.1f GiB", b/2^30}')  ${biggest##*	}"

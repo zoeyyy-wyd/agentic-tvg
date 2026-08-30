@@ -33,6 +33,16 @@ load_dotenv() {
         line="${line#export }"
         k="$(trim "${line%%=*}")"
         v="$(trim "${line#*=}")"
+        # Strip a trailing inline comment before the quotes, which judge.py's
+        # loader does not do. The placeholder line written into .env for this
+        # script carried a "# ... ，Write 权限" on the same line as the value; it
+        # rode into HF_TOKEN and came back from the Hub client as "'ascii' codec
+        # can't encode character '\uff0c'" -- the fullwidth comma, four layers
+        # away from anything that looked like a .env problem.
+        case "${v}" in
+            \"*|\'*) ;;                        # quoted: a # inside is literal
+            *[[:space:]]#*) v="$(trim "${v%%[[:space:]]#*}")" ;;
+        esac
         v="${v%\"}"; v="${v#\"}"; v="${v%\'}"; v="${v#\'}"
         if [ -n "${k}" ] && [ -n "${v}" ] && [ -z "${!k:-}" ]; then
             export "${k}=${v}"
@@ -50,6 +60,7 @@ DEST="./results/grpo-vanilla-1"                                    # 下载到�
 die() { echo "错误: $*" >&2; exit 1; }
 
 [ -n "${HF_TOKEN:-}" ] || die "HF_TOKEN 没设。在 ${ENV_FILE} 里加一行 HF_TOKEN=hf_xxx（Read 权限就够），或者 export HF_TOKEN"
+[[ "${HF_TOKEN}" =~ ^hf_[A-Za-z0-9]+$ ]] || die "HF_TOKEN 里混进了 token 以外的字符（长度 ${#HF_TOKEN}）。${ENV_FILE} 里那一行的值只能是 token 本身"
 [[ "${REPO_ID}" == your-username/* ]] && die "REPO_ID 还是占位符"
 command -v hf >/dev/null || die "找不到 hf。先跑: pip install -U 'huggingface_hub[hf_xet]'"
 
@@ -58,8 +69,15 @@ unset HF_HUB_ENABLE_HF_TRANSFER || true
 python3 -c "import hf_xet" 2>/dev/null \
     || echo "[warn] 未装 hf_xet，下载会明显变慢: pip install -U 'huggingface_hub[hf_xet]'"
 
-echo "帐号: $(hf auth whoami 2>&1 | head -1)"
-[[ "$(hf auth whoami 2>&1 | head -1)" == *"Not logged in"* ]] && die "token 无效或没有这个私有仓库的读权限"
+# `awk NR==1`, not `head -1`: head closes the pipe after one line, and when the
+# writer is still going that SIGPIPE (141) becomes the pipeline's status under
+# pipefail. awk reads to EOF. Called once and kept, too -- it was two network
+# round trips for one answer.
+whoami_line=$(hf auth whoami 2>&1 | awk 'NR==1')
+echo "帐号: ${whoami_line}"
+case "${whoami_line}" in
+    *"Not logged in"*|*Error*|*Invalid*) die "token 无效或没有这个私有仓库的读权限: ${whoami_line}" ;;
+esac
 
 # Ask the Hub how big this is before committing the disk to it -- running out
 # of space 15G into a 17G download leaves a truncated tree that looks complete.
