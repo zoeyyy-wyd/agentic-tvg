@@ -19,12 +19,12 @@ Two things this has to get right that the SFT plotter did not:
   kl_loss is ~1e-3. Only metrics that genuinely share a scale share a panel.
 
 Usage:
-    python plot_grpo.py                          # newest logs/grpo*.log
+    python plot_grpo.py                          # newest results/grpo*/console_*.log
     python plot_grpo.py LOG -o curves.png --csv metrics.csv
-    python plot_grpo.py logs/tb/grpo_vanilla -o curves.png   # TB event DIR
+    python plot_grpo.py results/grpo-vanilla/tb -o curves.png   # TB event DIR
 
 The TB-directory mode exists because console logs are mortal (one was rm'd
-mid-run on 2026-08-28) while the tensorboard events under logs/tb/<exp>/
+mid-run on 2026-08-28) while the tensorboard events under results/<run>/tb/
 survive every crash and resume. All event files in the dir are merged in
 mtime order with last-write-wins per step -- the same convention as
 concatenating console logs, so a resumed run's replayed steps take precedence.
@@ -174,11 +174,11 @@ def main() -> None:
     if argv:
         logs = [Path(a) for a in argv]
     else:
-        cands = sorted(Path("logs").glob("grpo*.log"), key=lambda p: p.stat().st_mtime,
-                       reverse=True)
+        cands = sorted(Path("results").glob("grpo*/console_[0-9]*.log"),
+                       key=lambda p: p.stat().st_mtime, reverse=True)
         logs = next(([p] for p in cands if parse(p)), [])
         if not logs:
-            sys.exit("no logs/grpo*.log with step lines found")
+            sys.exit("no results/grpo*/console_*.log with step lines found")
     for log in logs:
         written = plot(log, out)
         print(f"{log} -> {written if written else 'no step lines, skipped'}")

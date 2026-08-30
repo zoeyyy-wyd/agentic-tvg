@@ -129,13 +129,15 @@ TOTAL_STEPS=${TOTAL_STEPS:-267}
 GPU_MEM_UTIL=${GPU_MEM_UTIL:-0.65}             # 0.65 doubles KV pool vs 0.45; actor offloads during rollout
 LOGGER=${LOGGER:-'["console","tensorboard"]'}
 
-# results/<name>/ is the deliverable, same convention as run_sft.sh: ckpt/ +
-# rollouts/ + the config snapshot in one place. Hyphens here, underscores in
-# EXP_NAME (log and tensorboard filenames already use them).
+# results/<name>/ holds EVERYTHING this run generates, same convention as
+# run_sft.sh (2026-08-30 reorg): ckpt/ + rollouts/ + tb/ + console_<ts>.log
+# attempts + the merged console.log, curves and config snapshot the exit trap
+# writes. logs/ keeps only prepare_data's download logs. Hyphens here,
+# underscores in EXP_NAME.
 RESULT_NAME=${RESULT_NAME:-${EXP_NAME//_/-}}
 RESULT_DIR=${REPO}/results/${RESULT_NAME}
 
-mkdir -p "${RESULT_DIR}" logs
+mkdir -p "${RESULT_DIR}"
 
 # Disk guard. A checkpoint is ~17G and verl writes the new one before deleting
 # the old, so a save needs 2x that free. Warn rather than exit: resuming with a
@@ -147,7 +149,33 @@ if [ "${_free_gb}" -lt 40 ]; then
     [ "${_ckpts}" -gt 1 ] && echo "[warn] ${_ckpts} checkpoints under ${RESULT_DIR}/ckpt -- retention is not pruning them. Delete all but the one named in latest_checkpointed_iteration.txt." >&2
     echo "[warn] continuing anyway; check again after the next save." >&2
 fi
-export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
+export TENSORBOARD_DIR="${RESULT_DIR}/tb"
+
+# Plot on the way out, whatever the exit code -- run_sft.sh's trap, with two
+# changes. Fed from tb/ rather than the merged console log: the events survive
+# every crash and resume, and plot_grpo.py merges all of them last-write-wins
+# per step. And the hydra snapshot copy lives inside the trap (sft does it
+# after the pipeline) so a run that died still records the fully-resolved
+# config it actually ran with. console.log is still merged for grepping; the
+# [0-9] in the glob keeps it from feeding itself back in on the next run.
+plot_curves() {
+    local attempts=("${RESULT_DIR}"/console_[0-9]*.log)
+    if [ -e "${attempts[0]}" ]; then
+        cat "${attempts[@]}" > "${RESULT_DIR}/console.log"
+    fi
+    # awk NR==1, not head -1: head's early exit SIGPIPEs the writer, and under
+    # pipefail that 141 would take down the trap (same bug as hf_push.sh).
+    local _hydra
+    _hydra=$(ls -1dt outputs/*/*/.hydra 2>/dev/null | awk 'NR==1') || true
+    if [ -n "${_hydra:-}" ]; then
+        cp "${_hydra}/config.yaml" "${RESULT_DIR}/hydra_config.yaml"
+        cp "${_hydra}/overrides.yaml" "${RESULT_DIR}/hydra_overrides.yaml"
+    fi
+    if [ -d "${RESULT_DIR}/tb" ]; then
+        python plot_grpo.py "${RESULT_DIR}/tb" -o "${RESULT_DIR}/curves.png"             --csv "${RESULT_DIR}/metrics.csv" || true
+    fi
+}
+trap plot_curves EXIT
 
 # glibc allocator. These two are the fix for the three CPU OOMs of 2026-08-27
 # (GRPO_NOTES.md 6); do not drop them. glibc's mmap threshold is dynamic: every
@@ -275,4 +303,4 @@ python3 -m verl.trainer.main_ppo \
        ~133 steps, so total_epochs=1 would end the run early). If you ever
        remove total_training_steps, 100 epochs = 13,350 steps -- do not.` \
     trainer.total_training_steps="${TOTAL_STEPS}" \
-    "$@" 2>&1 | tee "logs/${EXP_NAME}_$(date +%Y%m%d_%H%M%S).log"
+    "$@" 2>&1 | tee "${RESULT_DIR}/console_$(date +%Y%m%d_%H%M%S).log"

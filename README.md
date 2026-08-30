@@ -49,7 +49,7 @@ run_sft.sh                SFT (SMOKE=1 for a 2-step smoke)
 merge_adapter.py          SFT checkpoint -> merged HF model (GRPO's init AND ref)
 run_grpo.sh               GRPO (trainer.val_only=True turns it into the evaluator)
 plot_sft.py plot_grpo.py  curves.png + metrics.csv (plot_grpo also reads
-                          logs/tb/<exp> dirs, which survive crashes)
+                          results/<run>/tb dirs, which survive crashes)
 diagnose_shm.sh           who is holding /dev/shm, live (OOM case file's tool)
 results/<run>/            ckpt/ + curves + metrics + config snapshot per run
 tests/  env_setup/
@@ -117,7 +117,7 @@ bash run_sft.sh                          # SFT, ~2 h -> results/sft-mix/
 python merge_adapter.py                  # fold LoRA -> results/sft-mix/merged
 bash run_grpo.sh                         # GRPO, ~58 h -> results/grpo-vanilla/
 bash run_grpo.sh trainer.val_only=True   # the evaluator (any stage, any model via MODEL_PATH=)
-python plot_grpo.py logs/tb/grpo_vanilla -o results/grpo-vanilla/curves.png   # curves any time
+bash replot.sh                                       # curves any time (runs plot_grpo.py on results/grpo-vanilla/tb)
 ```
 
 During GRPO, two things need a human:

@@ -61,20 +61,21 @@ if [ "${SMOKE:-0}" = "1" ]; then
 fi
 EXP_NAME=${EXP_NAME:-sft_mix}
 
-# results/<name>/ is the deliverable: ckpt/ + curves.png + the config snapshot,
-# everything a reader of the run needs in one place. Hyphens by convention here
-# (results/sft-mix), underscores in EXP_NAME because log and tensorboard
-# filenames already use them; override RESULT_NAME to decouple the two.
+# results/<name>/ holds EVERYTHING this run generates (2026-08-30 reorg):
+# ckpt/ + tb/ + console_<ts>.log attempts + the merged console.log, curves and
+# config snapshot from the trap below. logs/ keeps only prepare_data's download
+# logs. Hyphens by convention here (results/sft-mix), underscores in EXP_NAME;
+# override RESULT_NAME to decouple the two.
 RESULT_NAME=${RESULT_NAME:-${EXP_NAME//_/-}}
 RESULT_DIR=${REPO}/results/${RESULT_NAME}
 
-mkdir -p "${RESULT_DIR}" logs
-# Structured metrics for every run: tensorboard event files under logs/tb/,
-# alongside the console log. curves.png is regenerated automatically on exit
-# (see the trap below), crashed runs included.
-export TENSORBOARD_DIR="${REPO}/logs/tb/${EXP_NAME}"
+mkdir -p "${RESULT_DIR}"
+# Structured metrics for every run: tensorboard event files in tb/, alongside
+# the console log. curves.png is regenerated automatically on exit (see the
+# trap below), crashed runs included.
+export TENSORBOARD_DIR="${RESULT_DIR}/tb"
 
-LOG_FILE="logs/${EXP_NAME}_$(date +%Y%m%d_%H%M%S).log"
+LOG_FILE="${RESULT_DIR}/console_$(date +%Y%m%d_%H%M%S).log"
 
 # Plot on the way out, whatever the exit code -- the curve of a run that died
 # is exactly when you want to see it. Every attempt of this experiment is
@@ -87,7 +88,7 @@ plot_curves() {
     # Array, not $(ls): an unmatched glob would leave `cat` with no arguments,
     # and cat with no arguments reads stdin -- the trap would hang the shell
     # instead of returning.
-    local attempts=(logs/${EXP_NAME}_[0-9]*.log)
+    local attempts=("${RESULT_DIR}"/console_[0-9]*.log)
     [ -e "${attempts[0]}" ] || return 0
     cat "${attempts[@]}" > "${merged}"
     python plot_sft.py "${merged}" -o "${RESULT_DIR}/curves.png" \

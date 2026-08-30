@@ -6,12 +6,12 @@ have their own script, plot_grpo.py, which reuses parse()/write_csv() here.
 
 Parses the trainer's per-step lines ("step:N - train/loss:... - ...") and
 writes <log>.png next to each log. Metrics are also written as tensorboard
-events (logs/tb/<EXP_NAME>, see run_sft.sh) -- this script is the
+events (results/<run>/tb, see run_sft.sh) -- this script is the
 no-server-needed complement for quick PNGs.
 
 Usage:
     python plot_sft.py                     # newest logs/*.log with step lines
-    python plot_sft.py logs/sft_mix_*.log  # explicit log(s), one PNG each
+    python plot_sft.py results/sft-mix/console_*.log  # explicit log(s), one PNG each
     python plot_sft.py LOG -o results/sft-mix/curves.png   # explicit destination
     python plot_sft.py LOG --csv results/sft-mix/metrics.csv  # numbers, not pixels
 
@@ -19,9 +19,7 @@ A resumed run leaves one log per attempt. Concatenate them oldest-first for a
 single whole-run curve -- repeated steps keep their LAST value, which is the
 one that survived the rollback, so no hand-trimming is needed:
 
-    cat logs/sft_mix_20260826_101821.log logs/sft_mix_20260826_175728.log \
-        > logs/sft_mix_full.log
-    python plot_sft.py logs/sft_mix_full.log
+    python plot_sft.py results/sft-mix/console.log  # the trap-merged attempts
 
 Token and memory metrics are written to `--csv` but get no panel -- the figure
 is loss / lr / grad_norm / mfu. See NO_PANEL below for why.
@@ -181,10 +179,11 @@ def main() -> None:
     if argv:
         logs = [Path(a) for a in argv]
     else:
-        candidates = sorted(Path("logs").glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+        candidates = sorted(Path("results").glob("*/console_[0-9]*.log"),
+                            key=lambda p: p.stat().st_mtime, reverse=True)
         logs = next(([p] for p in candidates if parse(p)), [])
         if not logs:
-            sys.exit("no log with step lines found under logs/")
+            sys.exit("no results/*/console_*.log with step lines found")
     for log in logs:
         written = plot(log, out)
         print(f"{log} -> {written if written else 'no step lines, skipped'}")

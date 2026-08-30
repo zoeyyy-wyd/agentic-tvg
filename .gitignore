@@ -216,9 +216,11 @@ data/
 outputs/
 ckpts/
 
-# results/<run>/ is committed -- curves.png, metrics.csv, the config snapshot.
-# Not the 19G checkpoint or the raw console dump that live alongside them.
+# results/<run>/ holds everything the run generated (2026-08-30 reorg) and is
+# the committed deliverable: tb/ events, curves.png, metrics.csv, the config
+# snapshot. Not the 17G checkpoint or merged model, and not the console dumps
+# -- the global *.log above already swallows console.log and console_<ts>.log.
 results/*/ckpt/
 results/*/merged/
-results/*/console.log
+results/*/console*.log.png
 
