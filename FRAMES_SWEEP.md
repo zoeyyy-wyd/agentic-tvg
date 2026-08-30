@@ -88,6 +88,12 @@ VRAM** while step time nearly doubles.
 - **C=30 matches the paper's crop density.** LongVT's tool samples crops at 1 fps
   (measured from selftrace: median window 31 s ≈ 30 frames). A fixed 30 keeps the
   prompt schema and the response budget static, which a variable 1 fps would not.
+  A C=32 variant never got past vLLM engine-core init (crash-looped across 8
+  launches, one Ray OOM kill) and was abandoned rather than debugged; every
+  budget in §1 assumes C=30.
+- **Frame count does not move early SFT loss.** 2-step SFT smokes at
+  F=96/128/160/192 all landed at val/loss 1.480–1.485, so F is chosen on
+  evidence-window coverage and step-time grounds (above), not SFT fit.
 - **K is free on the GPU**; it costs step time linearly and RAM through the
   trajectory count.
 - Changing the frame count is not a local edit: `constants.GLOBAL_NUM_FRAMES`
@@ -138,3 +144,12 @@ bash run_grpo.sh trainer.val_before_train=False trainer.save_freq=-1 trainer.tes
 
 Frame variants come from rewriting `videos[].nframes` in `rl_train.parquet`.
 Above F=446, cap to each video's real frame count first (§3, item 1).
+
+## 7. Provenance
+
+The raw smoke outputs (`results/smoke*`, `results/grpo-smoke*`, `results/qa-smoke`
+— console logs and tb events, ~3.6 MB) were deleted on 2026-08-30; this file is
+what survives of them. The offload A/B that ran as `grpo-smoke-opt` is written up
+in `GRPO_NOTES.md` §6 ("Offload is not where the RAM goes"). `results/memtest*`
+is kept — GRPO_NOTES cites it directly. Production-run analysis lives in
+`GRPO_RESULTS.md`.
