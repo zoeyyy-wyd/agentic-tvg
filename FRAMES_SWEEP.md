@@ -104,7 +104,7 @@ VRAM** while step time nearly doubles.
 **Not the whole story:** this sweep's 2-step smokes reported 128 trajectories/step
 as comfortable at 113.6 GB. It is, but the *third* step is not — host RAM ratcheted
 upward until it died at step 4. That was diagnosed and fixed on 2026-08-27
-(glibc allocator, `GRPO_NOTES.md` §6), and it is why the production batch below is
+(glibc allocator, `GRPO_NOTES.md` §3), and it is why the production batch below is
 8 rather than the 16 this sweep suggested. A smoke has to outlive the failure
 period it is meant to rule out.
 
@@ -131,7 +131,7 @@ Data      SFT 600 questions · RL 1,068 train / 114 val · zero drops (DATA.md �
 Two of these exist only to stop something silent from happening:
 `mm_processor_kwargs.max_pixels` stops vLLM from profiling 112 images at the
 preprocessor default of 16.7M px and swallowing the KV pool; the two `MALLOC_*`
-variables stop the glibc heap from ratcheting (§4 above, `GRPO_NOTES.md` §6).
+variables stop the glibc heap from ratcheting (§4 above, `GRPO_NOTES.md` §3).
 
 ## 6. Reproduce
 
@@ -150,6 +150,6 @@ Above F=446, cap to each video's real frame count first (§3, item 1).
 The raw smoke outputs (`results/smoke*`, `results/grpo-smoke*`, `results/qa-smoke`
 — console logs and tb events, ~3.6 MB) were deleted on 2026-08-30; this file is
 what survives of them. The offload A/B that ran as `grpo-smoke-opt` is written up
-in `GRPO_NOTES.md` §6 ("Offload is not where the RAM goes"). `results/memtest*`
+in `GRPO_NOTES.md` §3d (offload is not where the RAM goes). `results/memtest*`
 is kept — GRPO_NOTES cites it directly. Production-run analysis lives in
 `GRPO_RESULTS.md`.

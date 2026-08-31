@@ -61,7 +61,7 @@ tests/  env_setup/
 |---|---|
 | Data | 1,958 SFT rows · 1,068 RL train · 114 RL val (`DATA.md`) |
 | SFT | **done** — val/loss 1.124 → 0.938, ~2 h, `results/sft-mix/` |
-| GRPO | **67/267** — val acc 0.452 → ~0.50, no hacking signature; 4 OOMs and one judge-credit outage survived (GRPO_NOTES §6) |
+| GRPO | **67/267** — val acc 0.452 → ~0.50, no hacking signature; 4 OOMs and one judge-credit outage survived (GRPO_NOTES §3) |
 | RFT | planned — see recipe below |
 
 **Baseline vs SFT, n=114 paired** (same rows, greedy, judge both arms; SFT arm

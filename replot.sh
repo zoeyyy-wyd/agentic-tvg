@@ -20,13 +20,13 @@ RUN="${RUN//_/-}"                      # EXP_NAME spelling -> results/ spelling
 OUT="results/${RUN}"
 TB="${OUT}/tb"
 
-die() { echo "错误: $*" >&2; exit 1; }
+die() { echo "error: $*" >&2; exit 1; }
 
-[ -d "${TB}" ] || die "没有 ${TB}
-有 tb/ 的 run: $(ls -d results/*/tb 2>/dev/null | sed 's|results/||;s|/tb||' | tr '\n' ' ')"
+[ -d "${TB}" ] || die "no ${TB}
+runs with a tb/: $(ls -d results/*/tb 2>/dev/null | sed 's|results/||;s|/tb||' | tr '\n' ' ')"
 # plot_sft.py parses console logs only; the TB-directory reader is plot_grpo.py's.
-case "${RUN}" in sft*) die "${RUN} 是 SFT 跑的，用: python plot_sft.py ${OUT}/console.log --csv ${OUT}/metrics.csv" ;; esac
-compgen -G "${TB}/events.out.tfevents.*" >/dev/null || die "${TB} 里没有 events 文件"
+case "${RUN}" in sft*) die "${RUN} is an SFT run; use: python plot_sft.py ${OUT}/console.log --csv ${OUT}/metrics.csv" ;; esac
+compgen -G "${TB}/events.out.tfevents.*" >/dev/null || die "no events files in ${TB}"
 
 python plot_grpo.py "${TB}" -o "${OUT}/curves.png" --csv "${OUT}/metrics.csv"
 
@@ -35,9 +35,9 @@ python - "${OUT}/metrics.csv" <<'PY'
 import csv, sys
 rows = list(csv.DictReader(open(sys.argv[1])))
 if not rows:
-    sys.exit("csv 是空的")
+    sys.exit("csv is empty")
 acc = next((c for c in rows[0] if c.startswith("val-core")), None)
-print(f"steps 0-{rows[-1]['step']}, {len(rows)} 行")
+print(f"steps 0-{rows[-1]['step']}, {len(rows)} rows")
 pts = [(r["step"], float(r[acc])) for r in rows if acc and r[acc]]
 if pts:
     print("val acc: " + "  ".join(f"{s}:{v:.3f}" for s, v in pts[-6:]))

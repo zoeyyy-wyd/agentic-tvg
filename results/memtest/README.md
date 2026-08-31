@@ -1,7 +1,7 @@
 # CPU OOM diagnosis, 2026-08-27
 
 Why GRPO died three times in a row, and what fixed it. Full write-up in
-`GRPO_NOTES.md` §6; this directory holds the measurements behind it.
+`GRPO_NOTES.md` §3; this directory holds the measurements behind it.
 
 | file | what |
 |---|---|

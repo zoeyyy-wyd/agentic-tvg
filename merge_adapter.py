@@ -102,6 +102,10 @@ def main() -> None:
 
     step = args.ckpt if args.ckpt.name.startswith("global_step_") else newest_step(args.ckpt)
     out = args.out or step.parent.parent / "merged"
+    # verl's RL trainer nests the model under actor/; the SFT trainer saves at
+    # the step level. Same files either way (model_world_size_*, lora_train_meta).
+    if (step / "actor").is_dir():
+        step = step / "actor"
     meta = json.loads((step / "lora_train_meta.json").read_text())
     unsupported = [k for k in LORA_VARIANTS if meta.get(k)]
     if unsupported:
@@ -111,6 +115,17 @@ def main() -> None:
 
     sd = torch.load(step / "model_world_size_1_rank_0.pt",
                     map_location="cpu", mmap=True, weights_only=True)
+    # The RL trainer (FSDP2) saves DTensors even at world size 1; the SFT
+    # checkpoint held plain tensors. At mesh size 1 the local shard IS the full
+    # tensor; at any other size it is not, and to_local() would silently hand
+    # back a fragment -- hence the guard.
+    from torch.distributed.tensor import DTensor
+    for k, v in sd.items():
+        if isinstance(v, DTensor):
+            if v.device_mesh.size() != 1:
+                raise SystemExit(f"{k} is sharded over {v.device_mesh.size()} ranks; "
+                                 "gather the checkpoint before merging")
+            sd[k] = v.to_local()
     adapter = {ADAPTER_NAME_RE.sub("", k): v.clone().float()
                for k, v in sd.items() if "lora_" in k}
     # The resolved module list, read off the keys -- not the `all-linear` spec

@@ -1,401 +1,268 @@
-# GRPO Configuration Notes (verl 0.9.0 / `run_grpo.sh`)
+# GRPO mechanics notes (verl 0.9.0 / `run_grpo.sh`)
 
-Why each knob in `run_grpo.sh` is set the way it is. Measurements behind the
-numbers: `FRAMES_SWEEP.md` and `results/memtest/`. Environment failures:
-`env_setup/ENVIRONMENT.md` §8. Values quoted here are the script's current ones.
+Three parts: the process/memory picture (§1–2), the four OOMs analysed against
+it (§3), and what every config key means (§4). All numbers were measured on
+this box (1×A100 80G, 188G RAM).
 
-## 1. One training iteration
+---
 
-```
-① rollout       vLLM generates TRAIN_BS × K trajectories (multi-turn agent loop)
-② old log_prob  FSDP actor, forward only — the "old policy" per-token log_prob
-③ advantage     group by prompt, A = (r − group mean) / group std   ← all of GRPO
-④ actor update  PPO clipped objective: ratio = exp(new − old), loss = −min(rA, clip(r)A)
-```
+## 1. The processes: who runs, what they hold
 
-verl's trainer *is* the PPO trainer; `algorithm.adv_estimator=grpo` only swaps
-step ③ (and drops the critic). Step ④ is still PPO, which is why every actor-side
-key is named `ppo_*`.
-
-## 2. K — `GROUP_SIZE` / `rollout.n` = 16
-
-K trajectories are sampled per prompt and form one group; the advantage is each
-trajectory's score relative to its group, so K ≥ 2 is required. If a group is
-uniformly right or uniformly wrong its variance is zero and it contributes no
-gradient — measured at 0.005% of the pool for this policy (DATA.md §6), so no
-difficulty filtering is worth a pass.
-
-K is **free on the GPU** (vLLM queues the requests; training packs by token). It
-costs wall clock linearly, and host RAM through the trajectory count — every
-in-flight trajectory holds its decoded video frames as CPU tensors (§6). K is
-also the term that must not shrink, since the whole advantage estimate is a
-within-group comparison; batch size is the one to cut instead.
-
-## 3. Three levels of batching
-
-This is the easiest place to get confused, because all three are called "batch".
-
-| Level | Key | Unit | What it triggers |
-|---|---|---|---|
-| train batch | `data.train_batch_size` = 8 | prompts | one rollout — the on-policy boundary |
-| mini-batch | `actor.ppo_mini_batch_size` = 8 | prompts (×K internally) | **one `optimizer.step()`** |
-| micro-batch | `ppo_max_token_len_per_gpu` = 24576 | tokens, packed dynamically | one forward+backward (gradient accumulation) |
-
-- The only constraint is `train_batch_size % ppo_mini_batch_size == 0`. Updates
-  per iteration = train / mini × `ppo_epochs` (default 1).
-- The mini-batch unit is *prompts*, so a group is never split across two
-  mini-batches (`ray_trainer.py:1328` multiplies it by `rollout.n` internally).
-- There is no "accumulate until train_batch_size, then optimise". With train 32 /
-  mini 8 there would be four parameter updates inside one iteration, the last
-  three already slightly off-policy with PPO clipping as the safety net. We set
-  **train == mini**, so each iteration is exactly one update: maximally
-  on-policy, and the simplest thing to reason about.
-
-## 4. Every token and batch parameter, in pipeline order
-
-### Before ① — data boundary
-
-| Key | Value | Unit | Role |
-|---|---|---|---|
-| `data.train_batch_size` | 8 | prompts | prompts per step |
-| `rollout.n` (K) | 16 | per prompt | group size → **128 trajectories/step**, the source of every cost |
-| `data.max_prompt_length` | 4608 | tokens | prompt tensor width; overflow raises (`truncation=error`) |
-| `data.max_response_length` | 16384 | tokens | response tensor width |
-| `data.val_batch_size` | 2 | prompts | validation loader batch — **not** a row cap (see below) |
-
-### ① rollout — vLLM side
-
-| Key | Value | Role |
+| Process | Job | Resident even when idle |
 |---|---|---|
-| `rollout.max_model_len` | 20992 | KV budget per sequence. Unset it falls back to 262144, whose single-sequence KV (~36 G) exceeds the pool and vLLM refuses to start |
-| `rollout.max_num_batched_tokens` | 24576 | token budget for **one engine forward**, shared by prefill and decode |
-| `rollout.max_num_seqs` | 256 (default) | concurrent sequence cap |
-| `rollout.enable_chunked_prefill` | True | slices long prompts so they can mix with decode |
-| `rollout.gpu_memory_utilization` | 0.65 | vLLM's total VRAM share, ~52 G |
-| `+rollout.limit_images` | 112 | images per request: 3 crops × 30 frames + slack |
-| `mm_processor_kwargs.max_pixels` | 150528 | size of the profiling dummy images; unset, vLLM profiles at the preprocessor default 16.7M px and eats the KV pool |
-| `multi_turn.max_user_turns` | 3 | at most 3 tool calls |
-| `multi_turn.max_assistant_turns` | 4 | 3 tool calls + the final answer |
-| `multi_turn.max_parallel_calls` | 1 | one tool call per turn |
-| `multi_turn.max_tool_response_length` | 2048 | truncation of the tool's **text** return (images are not counted) |
+| **TaskRunner** | orchestrator: dispatch, collect, compute advantages | a few G; heap balloons while working |
+| **WorkerDict** | FSDP actor: forward / backward / optimizer | **~37G** (FSDP comm buffers and shard bookkeeping — present wherever the params live) |
+| **vLLMHttpServer** | the engine's "front door", a Ray actor | CPU side ~15G total; |
+| **VLLM::EngineCore / Worker** | vLLM's own subprocesses (ZMQ-linked, *not* Ray actors — a millisecond scheduling loop cannot afford Ray's per-message serialization) | GPU side 52G while awake |
+| **AgentLoopWorker × 8** | rollout executors: decode video, drive vLLM over HTTP, run the crop tool | 1–2G each, ballooning while decoding |
+| **RewardLoopWorker × 8** | call the judge API | ~0.6G each |
+| torch DataLoader worker × 8 | forked from TaskRunner; read parquet, build text, **drop the video column** (popped in rl_dataset.py) — nearly idle in GRPO | ~17G PSS total (mostly their pro-rated share of pages inherited from the parent, not own data) |
+| OS / raylet / caches | | ~10G |
 
-`max_num_batched_tokens` is the vLLM scheduler's per-step token budget: prefill
-chunks and decode tokens draw on the same pool, with the running queue served
-first so in-flight sequences are not starved
-(`vllm/v1/core/sched/scheduler.py:408/432/629`). It has a second, VLM-only role
-that is easy to miss:
+**Fixed base: ~80–90G. Ray's watchdog kills at 188 × 95% = 179G.**
 
-```python
-max_num_encoder_input_tokens = encoder_cache_size = max_num_batched_tokens
-# vllm/config/scheduler.py:248-249
+One more region: the **plasma conveyor in `/dev/shm`** — one big file Ray
+opens; processes map it to pass bulk data (§2, §3b).
+
+Two easily-confused names: `data.dataloader_num_workers` (the near-idle row
+above) and `rollout.agent.num_workers` (the AgentLoopWorkers, where the heavy
+lifting is) are **unrelated**.
+
+**None of this architecture exists without tool calling**: in sync mode
+(verl's default) the vLLM engine lives *inside* the WorkerDict process and
+generation is a function call — no HTTP, no AgentLoopWorker. The single
+requirement "generation must pause mid-stream → really execute a tool → feed
+the result back and continue" is what forces vLLM into a standalone service.
+
+## 2. One training step (~785s): flow and memory actions
+
+### ① rollout (gen, ~150s)
+
+```
+TaskRunner reads 8 parquet rows (pure text, a few KB)
+  → repeat(n=16, interleave): [p1×16, p2×16, …] = 128 rows
+  → chunk(8): contiguous split → each AgentLoopWorker happens to get
+    one prompt's whole group of 16 (a numerical coincidence of
+    batch = num_workers; side effect: vLLM's prefix cache shares the
+    video-prefix KV across the group)
+
+Inside an AgentLoopWorker (16 conversations each):
+  A conversation is just data (message list + state); it does not run.
+  ONE asyncio event-loop thread picks the 16 up in turn — they spend
+  most of their life waiting for vLLM's HTTP reply, and waiting costs
+  no thread. The loop thread only steps in for milliseconds when a
+  wait completes (parse a tool_call, fire the next request).
+  Decoding is seconds of pure CPU — it would freeze all 16 if done on
+  the loop thread → thrown into a ≤32-thread decode pool (resident
+  workers + a task queue; torchcodec is C code that releases the GIL,
+  so the threads truly run in parallel).
+  Machine-wide ceiling: 8 workers × 32 threads ≈ 256 concurrent decodes.
+
+One trajectory's journey:
+  decode 128 global frames (~74MB) → pixels ride the HTTP body to vLLM
+  → vLLM preprocesses its own copy → cudaMemcpy to GPU → stream tokens
+  → <tool_call> appears → worker really decodes 30 frames (52MB) → next
+  round → <answer> or the 3+1-turn cap → assemble the finished item
+  → serialize onto the /dev/shm conveyor (~130MB parcel)
+  → TaskRunner takes it, deserializes into its own heap, accumulates
+    the ~16.5G batch
 ```
 
-The ViT's input budget *and* its encode cache are both set to this value.
-Shrinking it makes vision encodings get evicted and recomputed — a sensitivity
-text-only models do not have.
+**Serialize** = flatten an object into one contiguous byte stream (only bytes
+cross process boundaries); **deserialize** = the receiver rebuilds the object
+in *its own heap* from those bytes. The flattened copy and the rebuilt copy
+are different memory — so during every hand-off window the same data exists
+three times: sender's heap, conveyor, receiver's heap.
 
-**`max_user_turns=3` is over-provisioned.** Across steps 1/20/40/55 (128
-trajectories each) the policy called the tool exactly once in every trajectory
-but one, which called it twice at step 20. `limit_images=112` and
-`MAX_RESP_LEN=16384` are budgeted for the same unused 3 calls. That is slack in
-the *token* budget only — crop frames are charged per actual call, so it does not
-cost RAM (§6).
+### ②–⑥ training side
 
-### ② log_prob — forward only
-
-| Key | Value | Role |
+| Phase | Time | Memory action |
 |---|---|---|
-| `rollout.log_prob_use_dynamic_bsz` | True | enable packing |
-| `rollout.log_prob_max_token_len_per_gpu` | 24576 | tokens per bin (forward only, so it can be more aggressive than training) |
+| ② old_log_prob | ~172s | TaskRunner serializes the **whole 16.5G batch** → single big object on the conveyor → WorkerDict deserializes another copy → forward in 24576-token bins |
+| ③ ref (for KL) | ~176s | **a separate remote call — the batch rides the conveyor again in full** (WorkerDict keeps nothing across calls); forward with the adapter off |
+| ④ advantages | 0.1s | scalar math, negligible |
+| ⑤ update_actor | ~346s | conveyor again; forward+backward, LoRA grads are 33M params, optimizer state 265MB, activations bounded by checkpointing |
+| ⑥ update_weights | ~15s | FSDP gathers params layer-by-layer (layered_summon) → bf16 → CUDA IPC to the waking vLLM (which re-claims its 52G of VRAM) |
 
-### ③ advantage
+The big object on the conveyor is **strictly sequential — one alive at a
+time** (`ray memory` reads "1 objects, ~16.5G" every time). Each step has 3–4
+hand-off windows with a triple-copy moment; stacked on vLLM's residents and
+FSDP scaffolding that is the **~50G transient crest**.
 
-No token parameters — plain numpy, measured at 0.12 s. K enters via the `uid`
-grouping.
+**The `cpu_memory_used_gb` curve is sampled once per step, at step end** — it
+photographs low tide (96–133G). The crest lands between photographs (Ray's
+crash reports say 182–183G). "It died at 133" is a sampling artifact.
 
-### ④ update_actor
-
-Batching in §3, packing in §5. Two things worth knowing about where they land:
-
-- `optimizer.step()` lives in `engine/base.py:124-127`: `train_batch()` is
-  zero_grad → forward_backward over every bin → optimizer_step, **exactly once
-  per mini-batch**. The mini-batch count is
-  `data.shape[0] // mini_batch_size_per_gpu * ppo_epochs`
-  (`engine_workers.py:286`) — for us 128 // 128 × 1 = 1.
-- The lr scheduler advances only after the **last mini-batch of the step**
-  (`update_lr_scheduler = batch_idx == total_num_iterations - 1`,
-  `engine_workers.py:306`). So whatever the train/mini ratio, the cosine curve
-  follows *training steps*, and `TOTAL_STEPS` is a clean anneal denominator.
-
-### The three `max token` keys are three different things
-
-| | Key | Value | Who packs | Which memory |
-|---|---|---|---|---|
-| training | `actor.ppo_max_token_len_per_gpu` | 24576 | verl, Karmarkar-Karp, once after rollout | FSDP forward+backward activations |
-| forward | `rollout.log_prob_max_token_len_per_gpu` | 24576 | same | FSDP forward-only activations |
-| inference | `rollout.max_num_batched_tokens` | 24576 | **vLLM scheduler, re-formed every step** | vLLM prefill activations + ViT encode cache |
-
-They happen to be equal, but they are three parameters, three engines, three
-pools of memory; changing one does not affect the others. The first two pack
-offline (all the data is in hand, so bins can be balanced optimally); the third
-schedules online, without knowing what arrives next.
-
-### Constraint graph
+## 3. The four OOMs: tide and waves
 
 ```
-MAX_PROMPT_LEN(4608) + MAX_RESP_LEN(16384) = 20992
-   │
-   ├─→ rollout.max_model_len = 20992              exactly how the script computes it
-   │      └─ with chunked_prefill on, max_num_batched_tokens may be smaller
-   │
-   └─→ ppo / log_prob_max_token_len_per_gpu ≥ 20992
-          asserted at seqlen_balancing.py:384 — set it lower and the run dies
-
-max_num_batched_tokens(24576) ≥ max_num_seqs(256)      vLLM's own check
-train_batch_size(8) % ppo_mini_batch_size(8) == 0      the only batching constraint
+crash condition = baseline (tide, creeps up every step)
+                + transient stacking (wave, ~50G, roughly constant)  > 179G
 ```
 
-Packing counts **real tokens** (`attention_mask.sum()`), not padded width:
-measured 927,618 tokens / 24576 → 38 bins, ~3.4 sequences each (mean 7,247
-tok/sequence). So the `≥ 20992` constraint protects the worst case — one maximal
-sequence must fit in one bin — not the common case.
+Nothing abnormal happens on the step that dies — its wave is the same size as
+every previous step's. **The anomaly is amortized over all earlier steps**:
+each left behind a little memory that was "freed" but never returned to the
+kernel. `free()` updates the program's private ledger; Ray's killer reads the
+kernel's. Two grow-only mechanisms:
 
-**Changing the frame count cascades**: prompt ≈ 27 tok/frame + ~480 floor
-(FRAMES_SWEEP §1) → raise `MAX_PROMPT_LEN` → raise `max_model_len` → re-check
-both `*_max_token_len_per_gpu` against the inequality above. That chain is why
-the table exists.
+### 3a. glibc's heap ratchet (each process's own heap)
 
-### Open item: `val_batch_size=2` wastes 3.8×
+The heap is a notebook that can only be torn from the end: a crossed-out
+entry in the middle stays under live entries above it. Large blocks normally
+use mmap "sticky notes" (torn = truly returned), but glibc's size threshold is
+dynamic — freeing a big note raises the threshold to that note's size (cap
+32MB), **and it never comes back down**. One free of a 52MB crop tensor pins
+it at 32MB → every 588KB frame tensor thereafter goes into the notebook →
+crossed out but trapped → the notebook thickens a little every step.
 
-`_validate` pads the val batch up to `rollout.agent.num_workers` = 8
-(`ray_trainer.py:637-638`), and `pad_dataproto_to_divisor` pads by **duplicating
-real rows** (`protocol.py:74`). The duplicates decode their videos and run
-through vLLM in full; only after generation does `unpad_dataproto` discard them.
-
-| `val_batch_size` | batches | actually generated | wasted | peak concurrency |
-|---|---:|---:|---:|---:|
-| 2 (current) | 57 | 456 | **342 (75%)** | 8 |
-| 8 | 15 | 120 | 6 | 8 |
-| unset (=114) | 1 | 120 | 6 | **114 → OOM** |
-
-2 was chosen to hold concurrency down (validation at `test_freq=20` runs with the
-training state resident). But **the pad to 8 is a floor** — 2 cannot go below it.
-Peak concurrency is identical to 8; the only difference is 3.8× duplicated
-trajectories. Validation fires 8 times over the run, so setting it to 8 is free.
-Not changed yet: `grpo_vanilla` is running, and Hydra reads the config at launch.
-
-## 5. Gradient accumulation and dynamic packing
-
-`loss.backward()` only **accumulates** ∂loss/∂θ into `.grad`; parameters do not
-move until `optimizer.step()`. Gradients add, so:
-
-```
-mini-batch gradient g = g₁ + … + g₃₈
-per bin:  forward → backward (.grad += gᵢ) → that bin's activations freed
-after 38: optimizer.step()   ← bit-for-bit the same as one giant batch
-```
-
-Only one bin's activations (≤24,576 tokens) are ever resident. That is the whole
-mechanism by which VRAM is bounded — and the reason the frame sweep found VRAM
-flat: more frames means longer sequences means *more bins*, while the per-bin
-token ceiling, and therefore the activation peak, does not move.
-
-Packing (`use_dynamic_bsz`) is computed once per mini-batch after rollout
-finishes (`rearrange_micro_batches`, Karmarkar-Karp balancing), so the bin count
-differs every step as trajectory lengths change.
-`ppo_max_token_len_per_gpu` is a pure hardware knob: larger → fewer bins →
-faster, more activation memory, identical math. Hard floor: the longest single
-sequence, i.e. `MAX_PROMPT_LEN + MAX_RESP_LEN`. The static alternative
-(`ppo_micro_batch_size_per_gpu`, a fixed sequence count per bin) is mutually
-exclusive with it and a poor fit here, where RL sequence lengths vary by tens of
-times.
-
-## 6. Host RAM is the bottleneck — four OOMs, three mechanisms (2026-08-27/28)
-
-The short version: (a) glibc's mmap-threshold ratchet made the heap grow
-monotonically — fixed with two env vars; (b) offload barely moves host RAM
-(−4 G peak) — it is off for speed; (c) the residual slow climb is Ray's
-plasma arena in /dev/shm, whose tmpfs pages are never returned once touched —
-capped with `object_store_memory=40G`. Details in order below, wrong turns
-included.
-
-`rollout.agent.num_workers` (default 8) are the CPU-side rollout processes:
-decode the global video → build the prompt → call vLLM over HTTP → parse the
-tool call → run `crop_video` → loop. Each runs asyncio concurrency over a ≤32
-thread decode pool, so ~256 concurrent video decodes by default. (Unrelated to
-the PyTorch DataLoader's `num_workers`.)
-
-**GPU was never the constraint**: 45–57 G of 80 G throughout. Three consecutive
-crashes were all CPU RAM hitting 188 G, and all at the same point — end of a
-training step, waking vLLM to sync weights (`actor_rollout_update_weights` →
-`wake_up`).
-
-| Config | Died at |
-|---|---|
-| batch 16 × K16 = 256 trajectories | step 1 (182.2 G) |
-| batch 8 × K16 = 128 trajectories | step 4 (182.2 G) |
-
-Memory ratcheted rather than sitting high: `111.1 → 111.8 → 129.1 → dead`.
-
-### Root cause: glibc's mmap threshold ratchets
-
-malloc has two sources. The **heap (brk)** can only shrink from the top, so a
-freed block with live blocks above it is not returned. **mmap** allocations are
-independent mappings that `munmap` returns to the kernel on `free`, regardless of
-position.
-
-Which one is used depends on a threshold (default 128 KB) — and that threshold is
-**dynamic**: every time an mmap'd block is freed it is raised to that block's
-size, up to 32 MB, and it never comes back down. This project's allocation sizes
-sit right in that range: 588 KB per frame, 52 MB per crop tensor. One 52 MB free
-pushes the threshold to its 32 MB ceiling, and from then on everything smaller
-comes from the heap and is never returned. Short-lived video frames interleaved
-with long-lived rollout buffers means the long-lived ones pin the gaps, and RSS
-only climbs.
-
-**Fix** (set in `run_grpo.sh`, in `${VAR:-default}` form so it stays overridable):
+- Symptom: step-end 111 → 112 → 129 → dead (step 4, 182G).
+- Fix (set in run_grpo.sh; the trailing underscore is glibc's convention —
+  omit it and the variable is **silently ignored**):
 
 ```bash
-export MALLOC_MMAP_THRESHOLD_=131072      # pin at 128 KB, disable the ratchet
-export MALLOC_TRIM_THRESHOLD_=134217728   # return heap top to the kernel past 128 MB free
+export MALLOC_MMAP_THRESHOLD_=131072      # pin the threshold, disable the ratchet
+export MALLOC_TRIM_THRESHOLD_=134217728   # return heap-top slack >128MB to the kernel
 ```
 
-The trailing underscore is glibc's naming convention. **Omit it and the variable
-is silently ignored.**
+- After: same config, 8 steps: 96→99→116→**132→99**→100→100→101 — it climbs
+  and comes back down.
 
-Measured over 8 steps (batch 8 × K16, nothing else changed):
+### 3b. the plasma arena (`/dev/shm` conveyor)
 
-| step | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| before | 111.1 | 111.8 | 129.1 | dead | | | | |
-| after | 96.5 | 98.8 | 115.6 | 132.0 | 99.3 | 100.1 | 100.0 | 100.7 |
+A tmpfs file consumes a physical page **the first time that page is written,
+and keeps it forever after** (a hotel that builds rooms on demand and never
+demolishes: checkout only edits Ray's front-desk ledger). Physical cost = the
+furthest offset ever built. Parcel sizes vary per step (response lengths are
+random → the DataProto fattens and slims), so a new parcel occasionally fails
+to fit the vacant pattern and builds further out: 17 → 20G over 67 steps,
+with the default quota (30% of RAM = 53.4G) as the only true bound.
 
-The shape changed: instead of climbing monotonically it peaks at 132 and falls
-back, settling at 99–101 G (±1.4 G). After step 5 the instantaneous peak stays
-under 149.8 G, 32 G clear of the wall.
+- Fix: `+ray_kwargs.ray_init.object_store_memory=25769803776` (24 GiB).
+  Basis: the big object is sequential, one at a time (16.5G), so 24G holds it
+  — measured stable at 20G for 100+ steps after capping. Overflow is an
+  explicit `ObjectStoreFullError`, not a vague OOM; `response_length/mean`
+  leaving its 3.2K baseline (itself a hacking signal) fattens the object and
+  is the early warning.
+- Verification matters: `ray_init` is **kwargs-forwarded to `ray.init()`,
+  which itself takes **kwargs — **a typo is swallowed silently**. Confirm from
+  the live store: `ray memory --stats-only` percentage back-solves the quota
+  (16.3G / 66.33% → 24.0G ✓).
 
-### Offload is not where the RAM goes (measured)
+### 3c. The four crashes
 
-A controlled A/B (4 steps each, only the offload flags differ):
+| # | Scene | Mechanism |
+|---|---|---|
+| 1 | c30 smoke: 2 train steps, died in validation | training state resident + val batch on top (`val_batch_size` unset = all 114 rows in one bite) |
+| 2 | batch16×K16, step 1, 182G | 256 trajectories' baseline already at the kill line; first wave over it |
+| 3 | batch8×K16, step 4, 182G | ratchet raised the tide 111→129 in three steps; step 4's wave crossed |
+| 4 | glibc fixed, step 66, 183G | arena growth + slow drift moved the tide 97→104; one slightly larger wave |
 
-| | offload=True | offload=False | Δ |
-|---|---:|---:|---:|
-| peak memory | 175.3 G | 171.3 G | −4.0 |
-| WorkerDict peak PSS | 38.4 G | 37.9 G | **−0.5** |
-| per-step end | 96.5/98.8/115.6/132.0 | 97.3/98.0/114.6/131.3 | ~identical |
+**The crash step moved 1 → 4 → 66**: each mechanism fixed makes the tide rise
+slower and the run last longer. With both pinned, crest ≈ 150G < 179G — steps
+67 → 243+ without another OOM.
 
-With offload on, the fp32 weights (17.7 G) do park in RAM — but only during
-rollout, and the OOM peaks fall in phases where the weights are on the GPU
-anyway (the forward is running). The WorkerDict CPU footprint at those peaks
-is FSDP scaffolding and communication buffers, which exist wherever the
-parameters live — so the flag moves the peak by only 4 G. It is off for
-speed, not memory: 91 s/step saved by not shuttling 35 G over PCIe (§7).
+### 3d. Ruled out, and method lessons
 
-### The fifth OOM and the plasma cap (2026-08-28)
+- **Offload is not where the RAM goes** (A/B: peak 175.3 vs 171.3G, WorkerDict
+  PSS 38.4 vs 37.9G). Under the old config the fp32 weights *did* park in RAM,
+  but at the OOM instants the weights were on the GPU anyway (a forward was
+  running). It is off for **speed**: 91 s/step saved by not shuttling 35G over
+  PCIe each step.
+- **A smoke must outlive the failure period**: the 3-step smoke peaked at 132G
+  and looked 56G safe — it stopped one step short of the cliff (step 4).
+- **Measure PSS, not RSS**: RSS charges a shared page to every mapper, so
+  summing a parent and its forked children double-counts ("TaskRunner uses
+  75G" was this artifact). PSS pro-rates; its sum is real. Sampler and both
+  runs' curves: `results/memtest/`.
+- **Three "shm" numbers are three different things**: `df /dev/shm` includes
+  unlinked-but-mapped segments (the real cost); `du` sees only named files
+  (wild underestimate); `Shmem` in /proc/meminfo adds non-tmpfs shared maps
+  (CUDA IPC) on top.
 
-The glibc fix was not the whole story. With it in place the 267-step run
-reached **step 66** (up from 4) and then died the same way — 183 G, this time
-during *rollout*, not weight sync. The TB memory series showed why the crash
-point wanders: the per-step baseline still crept `97-100 → 103-104` G over 60
-steps (~2 G / 20 steps), so *any* routine peak eventually crosses the line.
+## 4. Config keys (`run_grpo.sh`, every non-default)
 
-The carrier this time was `/dev/shm`. Three numbers that are routinely
-conflated, and were during this hunt:
+**Scale and grouping**
+- `train_batch_size=8` × `rollout.n=16` (K) = 128 trajectories/step. K is the
+  group-comparison sample size: advantage = (r − group mean)/group std —
+  **K must not shrink** (it is the reliability of the within-group baseline);
+  batch only sets how many distinct prompts per step. A near-unanimous group
+  drives the lone dissenter's advantage toward the cap √15 ≈ 3.87 — the
+  occasional grad_norm spike (measured 0.131 vs 0.055 baseline, self-corrected
+  next step) is this mechanism; only a *sustained* rise with falling entropy
+  is the collapse signature.
+- `ppo_mini_batch_size=8` (= batch) + `ppo_epochs=1` (default): one optimizer
+  step per collected batch, purely on-policy. Mini-batches are per prompt — a
+  group is never split across two.
+- Binning: `ppo_max_token_len_per_gpu` / `log_prob_max_token_len_per_gpu` /
+  `max_num_batched_tokens` all 24576 — dynamic_bsz packs by tokens, one
+  forward per full bin; the hard bound on activation memory.
 
-- `df /dev/shm` — the tmpfs, **including** segments unlinked but still mapped
-  (`torch_… (deleted)`) — 17-20 G;
-- `du /dev/shm` — only what still has a name — 5 MB, wildly misleading;
-- `Shmem` in /proc/meminfo — df's number **plus** non-tmpfs shared maps
-  (CUDA IPC) — 28-31 G. The early "shm grew 6 G in 8 steps" readings were
-  this metric, i.e. partially something else.
+**Lengths**
+- `max_prompt_length=4608` (measured text 224–254 + vision ~3.9K, ~450 spare),
+  `max_response_length=16384` (measured mean 3.2K, clip rate 0.1%),
+  `max_model_len` = their sum, 20992. **Must stay < the 24576 bin budget** so
+  any single sequence fits one bin; otherwise a long sequence cannot be split
+  and activations blow VRAM. Left unset, max_model_len falls back to 262144 —
+  ~36G of KV for one sequence, vLLM refuses to start.
+- `truncation=error`: an over-long prompt fails loudly instead of silently.
 
-`ray memory --stats-only` on the live run settled it: **one object, 16.5 G**
-— a whole step's DataProto (128 trajectories with their pixel tensors) is a
-single plasma object, alive while it crosses TaskRunner → AgentLoopWorker →
-RewardLoop → actor, then freed. But plasma's arena is a tmpfs file that only
-ever grows to its quota (default 30% of RAM = 53.4 G here; every ray worker
-maps the same arena, so per-process numbers lie), and touched pages are never
-returned. The ceiling is the cost, so cap the ceiling:
+**Optimizer and horizon**
+- cosine lr 1e-5 → 1e-6 (`min_lr_ratio=0.1` keeps a floor: stopping early
+  never leaves dead final steps). `TOTAL_STEPS=267` (2 epochs) is the
+  **denominator of the anneal, not a cap**: the scheduler checkpoints only its
+  step counter; the curve is rebuilt from config at start — resume with a
+  different value and the lr jumps. Correct resume: `bash run_grpo.sh`, no
+  arguments.
+- `total_epochs=100` is a sentinel: the epoch loop must outlive 267 steps
+  (one epoch is only ~133); if total_training_steps were ever removed,
+  100 epochs = 13,350 steps.
 
-```bash
-+ray_kwargs.ray_init.object_store_memory=42949672960   # 40 G, in run_grpo.sh
-```
+**KL**
+- `use_kl_loss=True, coef=0.001, low_var_kl`; `use_kl_in_reward=False`. KL in
+  the loss, not the reward (the GRPO paper's placement) — and it keeps the
+  reward metric a pure task score, comparable to the baselines. Reference
+  policy: `lora_rank>0` triggers `ref_in_actor` — the ref **is this actor
+  with the adapter switched off**; zero extra VRAM, cost is one extra full
+  forward per step (~176s, ~22% of step time).
 
-40 G = two generations of the 16.5 G object in flight plus margin; /dev/shm
-high water over 67 steps was 20 G, so 2x. If it is ever too small the failure
-is an explicit `ObjectStoreFullError`, not a silent OOM. (`ray_init` is
-**kwargs-forwarded to `ray.init()` — main_ppo.py:75 — and the key is real per
-`inspect.signature`. Beware: ray.init itself takes **kwargs, so a typo here is
-swallowed silently; verify with `df /dev/shm` after start.)
+**VRAM budget**
+- `gpu_memory_utilization=0.65`: vLLM takes 52G awake (8G weights + 44G KV
+  pool); `free_cache_engine=True` returns it while asleep — vLLM and FSDP
+  time-share the GPU within a step.
+- `param_offload=False / optimizer_offload=False`: LoRA's resident need is
+  ~18G (fp32 weights 17.7 + grads 0.13 + optimizer 0.25) and fits the 28G
+  that survives vLLM waking; offload is a full-finetune mechanism (16G of
+  optimizer state). VRAM peak 73.5/80, identical on four measured steps
+  (deterministic load).
+- `limit_images=112` + `mm_processor_kwargs={max_pixels:150528}`: vLLM's
+  multimodal budget, with profiling dummies pinned at the real crop size —
+  unset, profiling assumes the preprocessor default 16.7M px and eats the KV
+  pool.
 
-### Method lessons
+**Rollout shape**
+- `mode=async` + `agent.default_agent_loop=tool_agent` + `multi_turn.*`
+  (hermes format, 3+1 turn cap): these keys summon the whole §1 architecture.
+  `agent.num_workers=8` (default) is the CPU-side decode parallelism — the
+  first knob to turn down under RAM pressure (changes no training math).
+- `data.return_raw_chat=True`: templating/tokenization moves to the
+  AgentLoopWorker; the dataset hands over raw text.
 
-- **A smoke must outlive the failure period it is meant to rule out.** The 3-step
-  smoke peaked at 132 G and looked like it had 56 G of headroom. It had stopped
-  one step short of the cliff.
-- **Measure PSS, not RSS.** RSS charges a shared page to every process mapping
-  it, so summing over a parent and its forked children double-counts — the
-  "TaskRunner is using 75 G" reading that started this investigation was an RSS
-  artifact. PSS divides each page by its sharers, so the sum is real physical
-  usage. Sampler and both runs' curves: `results/memtest/`.
+**Saving and validation**
+- `save_freq=20` / `test_freq=20`: a save and a full 114-row validation every
+  20 steps, one-to-one. `+max_actor_ckpt_to_keep=1` — the **PPO trainer reads
+  only this name**; SFT's `max_ckpt_to_keep` is legal-but-unread here (it once
+  silently piled two 17G checkpoints to 93% disk). A resumed process **never
+  deletes the checkpoint it resumed from** — clean that one by hand.
+- `val_batch_size=2`: the validation loader's **batch size, not a row cap** —
+  all 114 rows still run, two at a time; unset means all 114 in one bite,
+  which is crash #1.
+- `rollout_data_dir` / `validation_data_dir`: **not interchangeable** — the
+  first is read only by the training loop, the second only by `_validate()`;
+  a val_only run with just the first writes nothing. Both accumulate
+  `<step>.jsonl` (only a rerun with the same EXP_NAME overwrites).
 
-## 7. What was done with the GPU headroom
-
-The sweep left ~40 G of the card unused, and §7 originally listed four ways to
-spend it. Once the bottleneck turned out to be CPU RAM (§6), most of them stopped
-mattering. Current state:
-
-- **`GPU_MEM_UTIL` 0.45 → 0.65** — done. KV pool 23 G → 39 G, roughly doubling
-  rollout concurrency, which is the largest share of step time. Safe because the
-  phases are disjoint: the actor is out of the way during rollout, vLLM sleeps
-  during training.
-- **`enable_prefix_caching`** — verl enables it by default, nothing to do. GRPO
-  benefits structurally: the K trajectories of a group share one video prompt
-  prefix, so its KV is computed and stored once.
-- **`ppo`/`log_prob_max_token_len_per_gpu`** — left at 24576, not raised to
-  32768. Fewer bins would speed up training, but the constraint is not GPU time.
-- **`param_offload` / `optimizer_offload` → False** — done. Offload exists for
-  full finetuning, where ~16 G of optimizer state cannot sit beside vLLM. This
-  is LoRA — only the adapter is trainable, and the optimizer state measures
-  265 MiB. Resident need
-  is ~18 G against the 80 − 52 = 28 G that survives vLLM waking. Measured after
-  the change: 73.5 / 80 G peak, identical on all four measured steps
-  (deterministic, not load-dependent), and 91 s/step faster from not shuttling
-  35 G of parameters across PCIe twice per step. If that margin is ever too thin,
-  `gpu_memory_utilization=0.55` buys back ~8 G.
-
-## 8. Miscellaneous
-
-- **Do not export `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` here.**
-  (`run_sft.sh` does, because SFT has no vLLM.) verl toggles it at runtime inside
-  the hybrid worker: on during training phases for fragmentation control, off
-  around vLLM wake and weight sync, where it conflicts with sleep-mode
-  CuMemAllocator. A global export leaks into the vLLM process and hits exactly
-  that conflict. `engine_workers.py:760/805`.
-- **`agentic_tvg` is an editable install** — a `.py` edit takes effect on the next
-  process start, no reinstall (only `pyproject` changes need one). But the strings
-  in `prompts.py` / `constants.py` are already baked into the parquet files:
-  changing them requires re-rendering the data per DATA.md §0.5. Code taking effect is
-  not the same as data being consistent.
-- **verl itself is a wheel install**, and the multi-image tool-response fix is a
-  direct edit to site-packages (ENVIRONMENT.md §8.4). A pip reinstall wipes it;
-  preflight guards against running without it.
-- **Judge credits are an operational dependency.** The run hard-stops with
-  `JudgeUnavailable` when the Anthropic API refuses — by design (a silent
-  fallback to the alias matcher would swap scoring instruments mid-run). It
-  happened for real on 2026-08-28: ~$0.3/step at 128 trajectories, and the
-  key draws from **console.anthropic.com** credit balance — claude.ai
-  "usage credits" are a different pool with the same error text. Budget ~$7-10
-  per 200 steps; the cache (`judge_cache.jsonl`) makes replays free.
-- **A grad_norm spike is not always trouble.** Step 66: 0.131 vs 0.055
-  baseline, self-corrected next step. Cause: several groups went
-  near-unanimous, and group normalisation drives a lone dissenter's advantage
-  toward its cap (1-vs-15 split ⇒ |A| = √15 ≈ 3.87; observed −3.4), so one
-  trajectory carries its whole group's gradient. Watch for the *pattern*
-  (sustained rise + falling entropy = collapse loop), not the event.
-- **Config keys that are wrong but legal fail silently.** The PPO trainer reads
-  `trainer.max_actor_ckpt_to_keep`; the SFT trainer's name is
-  `trainer.max_ckpt_to_keep`. Copying the SFT name over cost a run on 2026-08-27
-  — Hydra's `+` created the key, nothing read it, and 17 G checkpoints piled up
-  until the disk hit 93%. Verify with `ls results/<run>/ckpt` after the second
-  save, not by re-reading the override list.
+**Entry point**
+- `MODEL_PATH` defaults to `results/sft-mix/merged` — this one path feeds
+  three things: vLLM's generation weights, the FSDP actor's init, and the KL
+  reference. Point it wrong and all three are wrong, with no error.
