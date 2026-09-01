@@ -63,7 +63,7 @@ EXP_NAME=${EXP_NAME:-sft_mix}
 
 # results/<name>/ holds EVERYTHING this run generates (2026-08-30 reorg):
 # ckpt/ + tb/ + console_<ts>.log attempts + the merged console.log, curves and
-# config snapshot from the trap below. logs/ keeps only prepare_data's download
+# config snapshot from the trap below. results/dataprep/ keeps prepare_data's download
 # logs. Hyphens by convention here (results/sft-mix), underscores in EXP_NAME;
 # override RESULT_NAME to decouple the two.
 RESULT_NAME=${RESULT_NAME:-${EXP_NAME//_/-}}

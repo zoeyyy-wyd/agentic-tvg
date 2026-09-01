@@ -106,6 +106,103 @@ in half-credit and evidence_iou, so every group carries gradient — but for
 the all-wrong fifth of prompts that gradient comes entirely from iou and
 partial credit, never from a correct answer.
 
+### The pool saturates — where the late-run gradient went (added 2026-09-01)
+
+The bimodality above is a snapshot of two windows. Run over all 266 step
+files (2,128 groups, every one K=16), it is a **trend**, and it is the
+mechanism behind the plateau:
+
+| steps | groups | all-wrong | mastered (mean acc ≥ 0.9) | zero acc-variance | within-group score std |
+|---|---:|---:|---:|---:|---:|
+| 1–40 | 312 | 4.8% | 10.9% | 10.3% | 0.3277 |
+| 40–80 | 320 | 2.2% | 11.6% | 7.2% | 0.3367 |
+| 80–120 | 320 | 3.8% | 12.8% | 9.4% | 0.3224 |
+| 120–160 | 312 | 4.5% | 16.3% | 13.8% | 0.3045 |
+| 160–200 | 320 | 4.1% | 22.2% | 15.6% | 0.2909 |
+| 200–240 | 320 | 3.8% | 23.4% | 15.3% | 0.2776 |
+| 240–267 | 224 | 5.8% | **29.5%** | **21.4%** | **0.2638** |
+
+"Mastered" is mean acc ≥ 0.9 over the group's 16 rollouts — at most one wrong
+answer, or at most three PARTIALs. It nearly triples; groups whose 16 acc
+values are *identical* double; the spread GRPO actually divides by falls 20%.
+The all-wrong share does not move, so this is not the policy getting worse at
+hard prompts — it is **the easy prompts being used up**. DATA.md §3 named
+this risk when the 1,068-prompt pool was chosen ("as the policy masters
+questions, groups turn all-correct → zero variance → the effective pool
+shrinks during training") and prescribed early-stop at reward plateau.
+
+Two refinements to the paragraph above this one:
+
+- **acc-variance dies far more often than score-variance.** Zero *score*
+  variance stays at 7/2,128 (0.3%) for the whole run — iou keeps breaking
+  ties, so the earlier "0/160" holds. But by the last band **21.4% of groups
+  have no acc signal at all**, and in those groups the entire gradient is the
+  iou term.
+- **In an acc-tied group the IoU weight is irrelevant.** If acc is constant
+  within a group then `r = const + λ·iou`, and GRPO's `(r − mean)/std` is
+  scale-invariant in λ. Measured: sweeping λ over 0.5…5.0 flips the tie-break
+  winner in **0 of 1,860** acc-tied subgroups. Re-weighting iou cannot help
+  the saturated groups; only different prompts can.
+
+### The late plateau is signal exhaustion, not the lr schedule
+
+`GRPO2_PLAN.md` §3c attributed the step-180 plateau to cosine decay carrying
+lr below ~3e-6. Learning speed against lr, fitted per phase from
+`metrics.csv`, does not support that:
+
+| phase | mean lr | train score slope | entropy slope | grad_norm |
+|---|---:|---:|---:|---:|
+| 1–90 | 9.21e-6 | +0.1022 | −0.1036 | 0.0536 |
+| 90–180 | 5.45e-6 | **+0.1380** | **−0.1468** | 0.0650 |
+| 180–267 | 1.75e-6 | −0.0545 | −0.0258 | 0.0730 |
+
+(slopes per 100 steps.) The relationship is **non-monotonic**: the fastest
+learning happened at the *middle* lr, and the highest lr phase was slower
+than it. If lr level set the pace, phase 1 would lead. Two readings follow:
+
+1. **"Raise the lr" is contraindicated by this run's own data** — 9.2e-6 was
+   already the slowest-learning band.
+2. **Constant lr is hygiene, not a lever.** Worth keeping (it is verl's
+   default and it removes TOTAL_STEPS as the anneal denominator, which
+   matters now that the horizon is set in epochs) but it should not be
+   expected to unfreeze the plateau. GRPO2_PLAN §3c was rewritten to this
+   framing the same day.
+
+Entropy slope is read only alongside the score slope, never alone: it
+measures how fast the policy is *sharpening*, not whether it is sharpening
+usefully. The two agree here (both peak in phase 2, both stall in phase 3),
+which establishes "the policy stopped moving" — and the saturation table
+above is what establishes *why*.
+
+### Pre-flight: which round-2 reward change actually reorders anything
+
+Re-scoring round 1's own 34,048 trajectories under candidate rewards, and
+comparing the within-group advantage vectors (rho = Spearman, "top flips" =
+share of groups whose best trajectory changes):
+
+| candidate | Spearman | top flips | groups losing gradient |
+|---|---:|---:|---:|
+| TIME_WEIGHT 0.5 → 1.0 | 0.992 | 3.1% | 0.0% |
+| TIME_WEIGHT 0.5 → 2.0 | 0.956 | 11.3% | 0.0% |
+| TIME_WEIGHT 0.5 → 5.0 | 0.877 | 23.4% | 0.0% |
+| judge v2 (simulated, PARTIAL → 69% FULL) | 0.874 | 22.8% | 0.1% |
+
+The judge rubric is worth ~7× the planned IoU re-weight, and matching it on
+weight alone would take TIME_WEIGHT ≈ 5.0 — i.e. letting a perfectly grounded
+wrong answer outrank a correct ungrounded one. **Round 2 is a judge round.**
+
+The judge row is a simulation (PARTIAL reassigned at the 11:5 split the
+2026-09-01 opus audit measured, three seeds, spread < 1 pt); real v2 verdicts
+are systematic where this is random, so read it as an effect size against the
+other rows, not as a predicted outcome.
+
+Reproduce all four tables:
+
+```bash
+python data_prep/analyze_groups.py results/grpo-vanilla/rollouts_grpo267 \
+    --signal --reward-ab --metrics results/grpo-vanilla/metrics.csv
+```
+
 ### evidence_iou: what "plateaued" means per trajectory
 
 - Late-window train rollouts: **31% of trajectories have iou = 0** (early:
@@ -172,6 +269,31 @@ is the known plasma/DataProto RAM ladder (GRPO_NOTES §3).
    premise is INCORRECT", or move `JUDGE_MODEL` up-tier (§8, item 4). Doing
    either shifts the acc scale down, so re-judge historical checkpoints
    before comparing across runs.
+
+**Follow-up (2026-09-01), after the group-level analysis in §4.** Items 2–4
+were written before the pool-saturation trend was measured; re-ranked by
+measured effect size:
+
+- **4 is the whole round.** Done as judge v2 (sonnet + question-anchored
+  rubric); it is the only change of the three that reorders within-group
+  advantage (rho 0.874, 22.8% of groups change their best trajectory).
+- **2 is nearly inert.** The format term is a constant and drops out of the
+  group-normalized advantage either way, and spending it on iou at
+  TIME_WEIGHT 1.0 moves 3.1% of group winners. Kept (it is the correct
+  bookkeeping) but it is not a lever.
+- **3 was abandoned 2026-09-01.** The multi-crop enabler (injecting
+  `longvideoreflection_3k`'s 2-crop traces into stage-1 SFT) was measured
+  against our frame budget and dropped: those traces sit on ~790s videos
+  where our 128-frame global view gives ~7.4 s/frame, and their first crop is
+  a median 7 s window — a 124× narrowing the model has no evidence to
+  propose. The shaping term went with it.
+- **New item: rebalance difficulty — ADOPTED into round 2** as the
+  epoch-boundary curriculum (GRPO2_PLAN §3e, 2026-09-01): full pool for
+  epoch 1, then `data_prep/filter_mastered.py` drops prompts whose visit
+  came back with mean acc ≥ 0.75 before epoch 2. Calibrated on this run's
+  own two visits/prompt: an epoch-1 visit ≥ 0.875 predicted epoch-2
+  mastery 85% of the time, and the 0.75 cut (26.4% of prompts) would have
+  reduced epoch-2 mastered groups 23.1% → 4.9%.
 
 ## 8. Post-run: the closing dip (steps 260 → 267)
 

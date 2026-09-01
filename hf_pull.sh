@@ -53,8 +53,8 @@ load_dotenv() {
 load_dotenv "${ENV_FILE}"
 
 # ============================ edit here ============================
-REPO_ID="zoeyyy-wyd/agentic-tvg-grpo"              # must match hf_push.sh
-DEST="./results/grpo-vanilla-1"                                    # download destination
+REPO_ID="zoeyyy-wyd/agentic-tvg-sft"              # must match hf_push.sh
+DEST="./results/sft-mix"                                    # download destination
 # ===============================================================
 
 die() { echo "error: $*" >&2; exit 1; }

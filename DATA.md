@@ -133,7 +133,7 @@ our own stage-3 self-distillation must come from our own rollouts.
 | `sft_wemath_602` | 602 | ditto | unused |
 | `sft_videor1_165k5` | 165,575 | stage-1 non-tool video CoT | unused (videos: 128 GiB) |
 | `sft_longvideoreason_5k2` | 5,238 | ditto | unused (videos: 645 GiB) |
-| `sft_longvideoreflection_3k` | 3,004 | tool-augmented traces (**not** plain CoT — 200/200 sampled carry tool_calls) | unused (videos: 253.6 GiB) |
+| `sft_longvideoreflection_3k` | 3,004 | **absent from the paper's Table 1**; most plausibly the unlisted multi-round half of the Gemini iMCoTT (54.5% of rows carry 2 crops) | unused — evaluated for injection and rejected 2026-09-01, post-mortem in `V2_PLAN.md` (its crop-1 pinpointing presupposes localisation F=128 cannot supply; RL videos cap at ~302 s) |
 
 ## 3. The SFT allocation, derived
 
@@ -293,16 +293,16 @@ messages:
                {"name": "crop_video", "arguments": {"start_time": 0.0, "end_time": 161.0}}
                </tool_call>                                        ← canonical spacing,
                                                                      no video_path
-[3] tool     : <image>×16 + "The 16 frames above are sampled evenly from 0.0s to 161.0s.
-               Their timestamps are: 0.0s, 10.7s, [...] 161.0s."   ← role=tool, our
+[3] tool     : <image>×30 + "The 30 frames above are sampled evenly from 0.0s to 161.0s.
+               Their timestamps are: 0.0s, 5.6s, [...] 161.0s."    ← role=tool, our
                crop_response_text, real decoded-frame timestamps
 [4] assistant: <think>[...]</think><answer>[...]</answer>          ← verbatim, less any
                                                                      stray <image>/<video>
 
-images : 16 × {image: data/processed/frames/<vid>_<s>_<e>_<i>.jpg,
+images : 30 × {image: data/processed/frames/<vid>_<s>_<e>_<i>.jpg,
                max_pixels: 150528, min_pixels: 3136}               ← re-decoded by us
 videos : 1 × {video: data/videos/selfqa/0D8e06EOBgg.mp4,
-              nframes: 64, max_pixels: 50176, min_pixels: 3136}    ← global view,
+              nframes: 128, max_pixels: 50176, min_pixels: 3136}   ← global view,
                                                                      decoded at train time
 tools  : [crop_video JSON schema]                                  ← what the chat
                                                                      template renders
@@ -348,8 +348,12 @@ Scoring (reward.py::compute_score_qa): R = 0.5·format + R_acc(judge)
 
 ## 8. Stage-3 RFT set — distilled from our own rollouts (2026-08-31)
 
-Built by `data_prep/extract_rft.py` per the README "RFT" recipe. The funnel,
-all numbers measured:
+Built by `data_prep/extract_rft.py`. The funnel below is the ROUND-1 build
+(outputs `rft_*.parquet`, trained as `results/rft`, outcome neutral —
+README "State"). Since 2026-09-01 the script defaults to round 2's inputs
+and outputs: `--rollouts results/grpo-v2/rollouts`, `--prefix rft_v2` — a
+v2 build cannot overwrite these round-1 files. All numbers below measured
+on the round-1 build:
 
 ```
 34,048 trajectories (266 step files × 128 rows: batch 8 prompts × K=16;

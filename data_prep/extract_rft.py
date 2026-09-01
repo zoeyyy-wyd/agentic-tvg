@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Build the RFT (stage 3) set from GRPO rollout dumps. README "RFT recipe".
 
-Raw material: results/grpo-vanilla/rollouts_grpo267/<step>.jsonl -- one row per
+Raw material: results/<grpo run>/rollouts/<step>.jsonl (round 1:
+results/grpo-vanilla/rollouts_grpo267/) -- one row per
 sampled trajectory with the flattened prompt (`input`), the flattened
 generation incl. tool responses (`output`), and the reward breakdown. The
 recipe, per README:
@@ -31,17 +32,18 @@ duration from rl_train.parquet -- the same value the RL tool was created with
 Traceback: question text -> rl_train.parquet is unique (README, verified
 here); it supplies video_path, duration, gt and evidence segment.
 
-Outputs: rft_train.parquet / rft_val.parquet (run_sft.sh schema: messages/
-images/videos/tools/extra_info), frames under --out/frames_rft/,
-rft_selection.json (stats + per-question picks), and rft_review.md -- a
+Outputs (all prefixed by --prefix, default "rft_v2"; round 1 used "rft"):
+<prefix>_train.parquet / <prefix>_val.parquet (run_sft.sh schema: messages/
+images/videos/tools/extra_info), frames under --out/frames_<prefix>/,
+<prefix>_selection.json (stats + per-question picks), and <prefix>_review.md -- a
 readable sample of picked score > 1.8 traces for the mandatory hand-read
 before training (RFT bakes reward quirks into weights harder than RL).
 
 Usage:
     python data_prep/extract_rft.py --plan-only     # selection stats only
     python data_prep/extract_rft.py                 # full render (~1-2 s/trace)
-    TRAIN_FILES=data/processed/rft_train.parquet VAL_FILES=data/processed/rft_val.parquet \
-        MODEL_PATH=results/grpo-vanilla/merged EXP_NAME=rft bash run_sft.sh
+    TRAIN_FILES=data/processed/rft_v2_train.parquet VAL_FILES=data/processed/rft_v2_val.parquet \
+        MODEL_PATH=results/grpo-v2/merged EXP_NAME=rft_v2 bash run_sft.sh
 """
 
 from __future__ import annotations
@@ -176,7 +178,11 @@ def render_row(t: dict, qrow: dict, frames_dir: Path) -> tuple[dict | None, str]
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--rollouts", type=Path, default=Path("results/grpo-vanilla/rollouts_grpo267"))
+    # Round 2 default (2026-09-01). During a run verl writes results/<run>/rollouts/;
+    # round 1's were renamed to rollouts_grpo267/ afterwards so a rerun under the
+    # same EXP_NAME could not overwrite them file by file (DATA.md §0.5). Point
+    # this at whichever name the finished run left behind.
+    ap.add_argument("--rollouts", type=Path, default=Path("results/grpo-v2/rollouts"))
     ap.add_argument("--rl-train", type=Path, default=Path("data/processed/rl_train.parquet"))
     ap.add_argument("--out", type=Path, default=Path("data/processed"))
     ap.add_argument("--min-score", type=float, default=1.5)
@@ -185,7 +191,10 @@ def main() -> None:
     ap.add_argument("--review-n", type=int, default=40)
     ap.add_argument("--val-frac", type=float, default=0.02)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--plan-only", action="store_true", help="selection + rft_selection.json, no rendering")
+    # Every output is prefixed so a v2 build cannot silently overwrite the round-1
+    # RFT set (whose parquets are the only record of what results/rft trained on).
+    ap.add_argument("--prefix", default="rft_v2", help="output basename prefix (round 1 used 'rft')")
+    ap.add_argument("--plan-only", action="store_true", help="selection + <prefix>_selection.json, no rendering")
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -258,7 +267,7 @@ def main() -> None:
                              for t in ts] for q, ts in picked_by_q.items()},
     }
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "rft_selection.json").write_text(json.dumps(sel, indent=1, ensure_ascii=False))
+    (args.out / f"{args.prefix}_selection.json").write_text(json.dumps(sel, indent=1, ensure_ascii=False))
     print(f"rollouts: {n_rows} rows -> {sel['kept_traces']} kept over {sel['questions']} questions "
           f"-> picked {len(picked)} (<= {args.traces_per_q}/question)")
     print(f"picked step quartiles: {sel['picked_step_quartiles']} | dropped: {dict(drop)}")
@@ -277,13 +286,13 @@ def main() -> None:
                   f"**Q:** {t['question']}", f"**GT:** {g['gt_text']}  ·  **segment:** {g['video_segment']}",
                   f"**model answer:** {t['answer']}", "", "```", t["a1"], "```", "",
                   f"tool → {t['resp'][:160]}…", "", "```", t["final"], "```", ""]
-    (args.out / "rft_review.md").write_text("\n".join(lines))
-    print(f"-> {args.out}/rft_selection.json, rft_review.md")
+    (args.out / f"{args.prefix}_review.md").write_text("\n".join(lines))
+    print(f"-> {args.out}/{args.prefix}_selection.json, {args.prefix}_review.md")
     if args.plan_only:
         return
 
     # ---- render --------------------------------------------------------------
-    frames_dir = args.out / "frames_rft"
+    frames_dir = args.out / f"frames_{args.prefix}"
     frames_dir.mkdir(parents=True, exist_ok=True)
     rows = []
     for n, t in enumerate(picked, 1):
@@ -309,13 +318,13 @@ def main() -> None:
     val_vids = set(rng.choice(vids, size=max(1, int(len(vids) * args.val_frac)), replace=False))
     train = [r for r in rows if r["extra_info"]["video_id"] not in val_vids]
     val = [r for r in rows if r["extra_info"]["video_id"] in val_vids]
-    pd.DataFrame(train).to_parquet(args.out / "rft_train.parquet")
-    pd.DataFrame(val).to_parquet(args.out / "rft_val.parquet")
+    pd.DataFrame(train).to_parquet(args.out / f"{args.prefix}_train.parquet")
+    pd.DataFrame(val).to_parquet(args.out / f"{args.prefix}_val.parquet")
     sel["rendered"] = len(rows)
     sel["dropped"] = dict(drop)
-    (args.out / "rft_selection.json").write_text(json.dumps(sel, indent=1, ensure_ascii=False))
+    (args.out / f"{args.prefix}_selection.json").write_text(json.dumps(sel, indent=1, ensure_ascii=False))
     print(f"rendered {len(rows)}/{len(picked)} (train {len(train)} / val {len(val)}), dropped {dict(drop)}")
-    print(f"-> {args.out}/rft_train.parquet, rft_val.parquet, frames_rft/ "
+    print(f"-> {args.out}/{args.prefix}_train.parquet, {args.prefix}_val.parquet, frames_{args.prefix}/ "
           f"({len(list(frames_dir.iterdir()))} jpgs)")
 
 

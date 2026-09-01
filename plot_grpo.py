@@ -21,7 +21,7 @@ Two things this has to get right that the SFT plotter did not:
 Usage:
     python plot_grpo.py                          # newest results/grpo*/console_*.log
     python plot_grpo.py LOG -o curves.png --csv metrics.csv
-    python plot_grpo.py results/grpo-vanilla/tb -o curves.png   # TB event DIR
+    python plot_grpo.py results/grpo-v2/tb -o curves.png        # TB event DIR
 
 The TB-directory mode exists because console logs are mortal (one was rm'd
 mid-run on 2026-08-28) while the tensorboard events under results/<run>/tb/
@@ -80,8 +80,12 @@ def panels_for(series: dict) -> list[tuple[str, list[str]]]:
         ("actor/entropy", ["actor/entropy"]),
         ("actor/grad_norm", ["actor/grad_norm"]),
         ("actor/lr", ["actor/lr"]),
-        # Trending to zero means every rollout in a group scores the same, so
-        # there is no signal left to learn from regardless of what reward says.
+        # NOTE (2026-09-01): this panel CANNOT show signal loss. GRPO's
+        # advantage is group-normalized, so its batch mean is ~0 by
+        # construction (measured: -0.01..-0.03 all run) whatever happens to
+        # the pool. The quantity that does show saturation -- within-group
+        # spread / mastered share -- is not in the TB stream at all; get it
+        # mid-run with data_prep/analyze_groups.py --signal on rollouts/.
         ("critic/advantages/mean", ["critic/advantages/mean"]),
         # Length inflation is the classic way to game a format+accuracy reward.
         ("response_length (tokens)", ["response_length/mean", "response_length/max"]),

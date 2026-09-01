@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # GRPO Stage-2 (plan §5) — Qwen3-VL-4B + LoRA + crop_video multi-turn, 1x A100 80GB.
 # QA-reworked 2026-08-26: data from extract_rl.py, reward = compute_score_qa.
+# Round 2 defaults since 2026-09-01: reward = compute_score_qa2 (IoU weight
+# 1.0), R_acc instrument = judge v2 (JUDGE_V=2), lr schedule = constant,
+# EXP_NAME = grpo_v2 -> results/grpo-v2/. Round 1 is reproduced by setting all
+# four back explicitly (see "Round 1 reproduction" below); the two are NOT
+# comparable if only some of them are.
 #
 # Every non-default key below was verified against verl 0.9.0 source:
 # - rollout.mode=async + data.return_raw_chat=True    -> agent-loop path (docs/start/agentic_rl.rst)
@@ -57,6 +62,11 @@
 # Ablation switches (plan §6):
 #   REWARD_FN=compute_score_penalty EXP_NAME=grpo_penalty bash run_grpo.sh
 #   MAX_USER_TURNS=1 EXP_NAME=grpo_t1 bash run_grpo.sh                                      (multi-turn value, T=3 vs T=1)
+#
+# Round 1 reproduction (all three must be set together -- the defaults above
+# are round 2 since 2026-09-01):
+#   JUDGE_V=1 REWARD_FN=compute_score_qa EXP_NAME=grpo_vanilla \
+#   bash run_grpo.sh actor_rollout_ref.actor.optim.lr_scheduler_type=cosine
 set -xeuo pipefail
 cd "$(dirname "$0")"
 REPO=$(pwd)
@@ -84,8 +94,17 @@ VAL_FILE=${VAL_FILE:-${REPO}/data/processed/rl_val.parquet}
 # (3 × ~4.6K worst) + reasoning → response 16384.
 MAX_PROMPT_LEN=${MAX_PROMPT_LEN:-4608}
 MAX_RESP_LEN=${MAX_RESP_LEN:-16384}
-EXP_NAME=${EXP_NAME:-grpo_vanilla}
-REWARD_FN=${REWARD_FN:-compute_score_qa}       # README "Reward": 0.5*format + judge R_acc + 0.5*evidence-IoU
+EXP_NAME=${EXP_NAME:-grpo_v2}
+REWARD_FN=${REWARD_FN:-compute_score_qa2}      # round 2: 0.5*format + judge R_acc + 1.0*evidence-IoU
+
+# R_acc instrument. Exported (not just set) because reward.py reads it at
+# import time inside the Ray workers, and echoed because the whole point of an
+# env-var instrument selector is that the run RECORDS which one it used --
+# until 2026-09-01 nothing did, so a run could optimise against v1 for 60h
+# while every reported baseline came from an offline v2 re-grade. v1 and v2
+# verdicts are never comparable; pass JUDGE_V=1 only to reproduce a v1 number.
+JUDGE_V=${JUDGE_V:-2}
+export JUDGE_V
 GROUP_SIZE=${GROUP_SIZE:-16}                   # K=16 (FRAMES_SWEEP §5; GPU-free, costs wall time)
 # prompts/step. 8 x K=16 = 128 trajectories/step. Was 16 (=256 traj) until
 # 2026-08-27, when step 1 died with ray OutOfMemoryError at the vLLM weight
@@ -98,10 +117,24 @@ GROUP_SIZE=${GROUP_SIZE:-16}                   # K=16 (FRAMES_SWEEP §5; GPU-fre
 # weight sync and the vLLM sleep/wake cycle are fixed costs per step.
 TRAIN_BS=${TRAIN_BS:-8}
 
-# lr: cosine decay from 1e-5 to 0.1x over TOTAL_STEPS (verl default is
-# `constant`; RL usually keeps it flat because the policy -- and therefore the
-# objective -- moves under the optimizer, so "anneal toward a fixed optimum"
-# does not strictly apply). Two things follow from choosing cosine here:
+# lr: **constant 1e-5 since round 2** (GRPO2_PLAN §3c). Round 1 used cosine
+# decay to 0.1x over TOTAL_STEPS and plateaued from step 180, exactly where lr
+# had fallen below ~3e-6 -- the schedule froze learning in the phase the new
+# reward terms most need it. The 2026-09-01 oscillation analysis (§2) showed
+# the decay bought no stability either: lr fell 8x across the run while the
+# sawtooth amplitude grew 0.113 -> 0.176, tracking the between-prompt
+# difficulty spread, not the step size. verl's default is `constant` and RL
+# usually keeps it flat because the policy -- and therefore the objective --
+# moves under the optimizer, so "anneal toward a fixed optimum" does not
+# strictly apply. Side benefit: TOTAL_STEPS stops being a schedule denominator,
+# so extending or stopping early no longer bends the curve (the round-1 resume
+# footgun below disappears). Collapse fallback (entropy falling fast +
+# grad_norm rising, GRPO_NOTES §4): resume with
+# `...lr_scheduler_type=cosine ...min_lr_ratio=0.3`.
+#
+# The cosine reasoning below is kept for the round-1 record; min_lr_ratio is
+# inert under a constant schedule.
+# Two things followed from choosing cosine:
 #   - TOTAL_STEPS is now part of the schedule, not just a stopping point.
 #     Changing it reshapes the whole curve, and resuming a run under a
 #     different TOTAL_STEPS makes the lr jump rather than continue.
@@ -110,34 +143,51 @@ TRAIN_BS=${TRAIN_BS:-8}
 #     final steps not learning -- and this one is budgeted at ~60h, long
 #     enough that being cut short is the likely outcome.
 MAX_USER_TURNS=${MAX_USER_TURNS:-3}
-# 267 steps = 2.00 epochs over the 1,068 rl_train prompts (batch 8), 34.2K
-# trajectories, ~60h at the measured 13.6 min/step. Sized long on purpose: the
-# asymmetry favours it. Overshooting costs only the marginal hours -- stop early
-# and min_lr_ratio=0.1 means lr never decayed to nothing -- while undershooting
-# cannot be extended (see below) and would mean re-running from the SFT init.
+# Horizon: EPOCHS, not a step count (round 2, 2026-09-01). verl derives
+# total_training_steps = len(train_dataloader) * total_epochs whenever
+# trainer.total_training_steps is null (ray_trainer.py:435), and the train
+# loader is drop_last=True, so 1,068 rl_train prompts at batch 8 give
+# floor(1068/8) = 133 steps/epoch -> EPOCHS=2 = 266 steps, ~60h at the
+# measured 13.6 min/step. Round 1 hardcoded 267 for the same 2 epochs.
+#
+# Two reasons the epoch form is now the right one:
+#   - the lr schedule is constant, so the horizon is no longer the denominator
+#     of an anneal. Under round-1's cosine, changing the step count reshaped
+#     the whole curve and a resume under a different value made lr JUMP; that
+#     footgun is gone, and with it the reason to pin the number by hand.
+#   - it tracks the data. Re-splitting SFT/RL (--sft-questions, DATA.md §3)
+#     changes the prompt pool, and 2 epochs stays 2 epochs instead of silently
+#     becoming 1.7 or 2.4 while the constant says 267.
 # Headroom says there is something to find: at the SFT start the format term is
 # already 0.487/0.5 but evidence_iou is 0.075/0.5, and the 3-step smoke moved
 # reward 0.998 -> 1.165, so this is not a policy that saturates immediately.
-# Since lr became cosine this is a *horizon*, not a cap:
-# it is the denominator of the anneal, so plan to run it out. Two consequences:
-# stopping early at reward saturation leaves the anneal unfinished, and
-# resuming with a different TOTAL_STEPS makes lr jump rather than continue
-# (the scheduler checkpoints its step counter, but the curve is a closure
-# rebuilt from this value -- torch_functional.py, get_cosine_schedule_with_warmup).
 # To resume, change nothing: `bash run_grpo.sh` and resume_mode=auto does it.
-TOTAL_STEPS=${TOTAL_STEPS:-267}
+EPOCHS=${EPOCHS:-2}
+# Optional hard cap, UNSET by default -- set it only for a short diagnostic run
+# (TOTAL_STEPS=20 bash run_grpo.sh). When set it overrides the epoch horizon;
+# when empty the flag is not passed at all and verl computes it from EPOCHS.
+TOTAL_STEPS=${TOTAL_STEPS:-}
+STEP_CAP=()
+if [ -n "${TOTAL_STEPS}" ]; then
+    STEP_CAP=(trainer.total_training_steps="${TOTAL_STEPS}")
+fi
 GPU_MEM_UTIL=${GPU_MEM_UTIL:-0.65}             # 0.65 doubles KV pool vs 0.45; actor offloads during rollout
 LOGGER=${LOGGER:-'["console","tensorboard"]'}
 
 # results/<name>/ holds EVERYTHING this run generates, same convention as
 # run_sft.sh (2026-08-30 reorg): ckpt/ + rollouts/ + tb/ + console_<ts>.log
 # attempts + the merged console.log, curves and config snapshot the exit trap
-# writes. logs/ keeps only prepare_data's download logs. Hyphens here,
+# writes. results/dataprep/ keeps prepare_data's download logs. Hyphens here,
 # underscores in EXP_NAME.
 RESULT_NAME=${RESULT_NAME:-${EXP_NAME//_/-}}
 RESULT_DIR=${REPO}/results/${RESULT_NAME}
 
 mkdir -p "${RESULT_DIR}"
+
+# One grep-able line per run recording what the reward actually was. set -x
+# traces the assignments above, but the trace is interleaved with thousands of
+# ray lines; this is the line to grep when a number needs an instrument.
+echo "[recipe] EXP_NAME=${EXP_NAME} REWARD_FN=${REWARD_FN} JUDGE_V=${JUDGE_V} MODEL_PATH=${MODEL_PATH} TRAIN_FILE=${TRAIN_FILE} EPOCHS=${EPOCHS}${TOTAL_STEPS:+ TOTAL_STEPS=${TOTAL_STEPS}}"
 
 # Disk guard. A checkpoint is ~17G and verl writes the new one before deleting
 # the old, so a save needs 2x that free. Warn rather than exit: resuming with a
@@ -247,7 +297,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.model.exclude_modules='.*visual.*' \
     actor_rollout_ref.actor.strategy=fsdp2 \
     actor_rollout_ref.actor.optim.lr=1e-5 \
-    actor_rollout_ref.actor.optim.lr_scheduler_type=cosine \
+    actor_rollout_ref.actor.optim.lr_scheduler_type=constant \
     actor_rollout_ref.actor.optim.min_lr_ratio=0.1 \
     actor_rollout_ref.actor.ppo_mini_batch_size="${TRAIN_BS}" \
     actor_rollout_ref.actor.use_dynamic_bsz=True \
@@ -299,10 +349,12 @@ python3 -m verl.trainer.main_ppo \
     +trainer.max_actor_ckpt_to_keep=1 \
     trainer.save_freq=20 \
     trainer.test_freq=20 \
-    trainer.total_epochs=100 \
-    `# ^ sentinel, not a target: the epoch loop must outlast the real stop,
-       total_training_steps below (267 = 2 epochs at batch 8; one epoch is only
-       ~133 steps, so total_epochs=1 would end the run early). If you ever
-       remove total_training_steps, 100 epochs = 13,350 steps -- do not.` \
-    trainer.total_training_steps="${TOTAL_STEPS}" \
+    trainer.total_epochs="${EPOCHS}" \
+    `# ^ THE horizon now (round 2): total_training_steps is left null so verl
+       derives 133 steps/epoch from the 1,068-prompt loader at batch 8.
+       Round 1 inverted this -- epochs=100 as a sentinel with a hardcoded
+       267-step cap -- because cosine needed a fixed denominator. Do not put
+       the sentinel back without also re-pinning STEP_CAP, or the run becomes
+       100 epochs = 13,300 steps.` \
+    "${STEP_CAP[@]}" \
     "$@" 2>&1 | tee "${RESULT_DIR}/console_$(date +%Y%m%d_%H%M%S).log"

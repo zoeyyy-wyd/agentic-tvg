@@ -1,11 +1,17 @@
 """Answer-equivalence judge, INSTRUMENT V2: Anthropic API, sonnet, question-
 anchored rubric, disk-cached.
 
-Sibling module `judge.py` is instrument v1 (haiku, one-word rubric) and stays
-the default; it produced every v1 number under results/. Selection is by env
-var in reward.py (`JUDGE_V=2`), so which instrument a run used is recorded in
-its environment rather than in a source diff. The two are NOT comparable and
-keep separate caches -- never average or trend v1 and v2 numbers together.
+**This is the default instrument since 2026-09-01** (reward.py: JUDGE_V
+defaults to "2"). Sibling module `judge.py` is instrument v1 (haiku,
+one-word rubric); it produced every v1 number under results/ and is reached
+with `JUDGE_V=1`. Selection is by env var in reward.py, so which instrument
+a run used is recorded in its environment rather than in a source diff --
+and run_grpo.sh now exports it and prints a `[recipe]` line, because while
+v1 was the default every reported v2 number came from OFFLINE re-grading
+(judge_audit2.py) and a training run that forgot to export JUDGE_V=2 would
+have optimised against v1 for its whole 60h horizon with nothing in the log
+to say so. The two are NOT comparable and keep separate caches -- never
+average or trend v1 and v2 numbers together.
 
 R_acc, one instrument (README "Reward"; revised 2026-08-26, the free matcher
 fast-path was removed -- it saved ~$1-3/run and created a matcher-vs-judge

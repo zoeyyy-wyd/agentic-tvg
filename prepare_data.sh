@@ -12,7 +12,7 @@ REPO=$(pwd)
 source "${REPO}/env_setup/preflight.sh"
 
 SKIP_ARMB=${SKIP_ARMB:-1}   # ablations cut; images only on explicit request
-mkdir -p logs data/archives data/videos/selfqa data/videos/rl_val data/videos/geminicot data/images models
+mkdir -p results/dataprep data/archives data/videos/selfqa data/videos/rl_val data/videos/geminicot data/images models
 step() { echo -e "\n\033[1;32m==> $*\033[0m"; }
 
 avail=$(df -BG --output=avail . | tail -1 | tr -dc '0-9')
@@ -22,23 +22,23 @@ avail=$(df -BG --output=avail . | tail -1 | tr -dc '0-9')
 # NOTE: zip names MUST be positional args. `--include a.zip b.zip` makes the
 # second name positional and silently discards the --include pattern (verified
 # the hard way 2026-08-25).
-step "Downloading in parallel (logs/dl_*.log)"
+step "Downloading in parallel (results/dataprep/dl_*.log)"
 hf download longvideotool/LongVT-Parquet --repo-type dataset \
-    --local-dir data/annotations > logs/dl_anno.log 2>&1 &
+    --local-dir data/annotations > results/dataprep/dl_anno.log 2>&1 &
 p_anno=$!
 hf download Qwen/Qwen3-VL-4B-Instruct \
-    --local-dir models/Qwen3-VL-4B-Instruct > logs/dl_model.log 2>&1 &
+    --local-dir models/Qwen3-VL-4B-Instruct > results/dataprep/dl_model.log 2>&1 &
 p_model=$!
 hf download longvideotool/LongVT-Source selfqa_1.zip rl_val_1.zip \
-    --repo-type dataset --local-dir data/archives > logs/dl_selfqa.log 2>&1 &
+    --repo-type dataset --local-dir data/archives > results/dataprep/dl_selfqa.log 2>&1 &
 p_selfqa=$!
 hf download longvideotool/LongVT-Source geminicot_1.zip geminicot_2.zip \
-    --repo-type dataset --local-dir data/archives > logs/dl_gemini.log 2>&1 &
+    --repo-type dataset --local-dir data/archives > results/dataprep/dl_gemini.log 2>&1 &
 p_gemini=$!
 p_armb=""
 if [ "$SKIP_ARMB" != "1" ]; then
     hf download longvideotool/LongVT-Source llavacot_1.zip openvlthinker_1.zip wemath_1.zip \
-        --repo-type dataset --local-dir data/archives > logs/dl_armb.log 2>&1 &
+        --repo-type dataset --local-dir data/archives > results/dataprep/dl_armb.log 2>&1 &
     p_armb=$!
 fi
 
@@ -47,7 +47,7 @@ rc=0
 for job in "annotations:$p_anno" "model:$p_model" "selfqa+rl_val:$p_selfqa" \
            "geminicot:$p_gemini" ${p_armb:+"arm-b-images:$p_armb"}; do
     name=${job%%:*}; pid=${job##*:}
-    if wait "$pid"; then echo "  [ok]   $name"; else echo "  [FAIL] $name -- see logs/"; rc=1; fi
+    if wait "$pid"; then echo "  [ok]   $name"; else echo "  [FAIL] $name -- see results/dataprep/"; rc=1; fi
 done
 [ "$rc" -eq 0 ] || { echo "download(s) failed, nothing else ran" >&2; exit 1; }
 

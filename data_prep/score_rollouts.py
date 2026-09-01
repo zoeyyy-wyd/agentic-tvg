@@ -2,7 +2,10 @@
 """Mean metrics over validation/benchmark rollout jsonl(s), README-table style.
 
 Works on anything _validate dumps (validation_data_dir): each line carries the
-per-row scores from compute_score_qa (acc/format_score/evidence_iou/...).
+per-row scores from whichever reward fn the run used -- compute_score_qa
+(round 1) or compute_score_qa2 (round 2), same key set either way
+(acc/format_score/evidence_iou/...). Only `score` is on a different scale
+between the two, so compare that column only within one round.
 
 Usage:
   python data_prep/score_rollouts.py results/val-rft/val_rollouts/0.jsonl

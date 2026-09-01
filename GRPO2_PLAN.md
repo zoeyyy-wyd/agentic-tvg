@@ -1,40 +1,52 @@
-# GRPO Round 2 Plan — `grpo2` (drafted 2026-09-01)
+# GRPO Round 2 Plan — `grpo_v2` (2026-09-01; rewritten same day after the group-level analysis, all §3 changes implemented)
 
-Design for the second GRPO run, starting from the RFT-distilled model.
-Evidence base: `GRPO_RESULTS.md` (round-1 forensics), `GRPO_NOTES.md`
-(mechanics), the 2026-09-01 oscillation analysis (§2 below), and the judge
-audit (`judge_audit.py`, GRPO_RESULTS §8.4).
+Design for the second GRPO run: **same start model as round 1
+(`results/sft-mix/merged`), judge v2 as the one real reward change, an
+epoch-boundary curriculum against pool saturation, constant lr as hygiene.**
+Evidence base: `GRPO_RESULTS.md` (round-1 forensics; its §4 group-level
+saturation analysis, added 2026-09-01, is what reshaped this plan) and
+`GRPO_NOTES.md` (mechanics). Two earlier routes were measured and dropped —
+their post-mortems live where the evidence is:
+
+- **rft2 / SFT2 with reflection-data injection** (this file's first draft,
+  then V2_PLAN's variant): abandoned. `V2_PLAN.md` holds the post-mortem —
+  the injected traces presuppose localisation the 128-frame budget cannot
+  supply, and the RL pool's ≤302s videos make multi-crop unprofitable anyway.
+- **"the plateau was the cosine lr"** (this file's first §3c): withdrawn.
+  Learning speed vs lr is non-monotonic across round 1's phases and the
+  plateau tracks pool saturation instead (GRPO_RESULTS §4).
 
 ## 1. What round 1 established
 
 Round 1 (`grpo-vanilla`, 267 steps) worked but plateaued: val acc
 0.456 → 0.50–0.55 band from step 180, evidence_iou stuck at ~0.21, policy
-converged to exactly one crop per trajectory (cap allows 3). The bottleneck
-is the **reward signal**, not optimization:
+converged to exactly one crop per trajectory (cap allows 3).
 
-- **format term saturated at its 0.5 max from step 0** (4 decode failures in
-  34K trajectories). Within a group it is a constant, so under GRPO's
-  group-normalized advantage it contributes zero gradient.
+- **The plateau is pool saturation.** Groups the policy has mastered
+  (mean acc ≥ 0.9 over the 16 rollouts) grow 10.9% → 29.5% across the run;
+  groups with zero acc variance 10.3% → 21.4%; within-group reward spread
+  −20%. The all-wrong share never moves (~4–5%) — easy prompts get used up,
+  hard ones stay. Full trend + method: GRPO_RESULTS §4 ("The pool
+  saturates"), reproduced by `data_prep/analyze_groups.py --signal`.
+  DATA.md §3 predicted exactly this failure mode for the 1,068-prompt pool.
 - **The judge leaked half-credit.** The 2026-09-01 full-set audit (opus
-  re-grading all 114 val rows — superseding the earlier 21-flip audit's
-  "errs only lenient" reading) showed haiku's 0.5 was a *refuge verdict*
-  in both directions: of its disputed PARTIALs, 11 deserved FULL and 5
-  deserved 0, and 30% of all 31K training verdicts sat in the 0.5 bucket.
-  Either way the effect on GRPO is the same: flattened advantage
-  differences exactly in the mid-difficulty groups where the within-group
-  comparison carries the most signal. Fixed by judge v2 (§3a).
-- **Wrong answers co-occur with missing the window.** The val-rft error
-  taxonomy (`results/val-rft/analysis.md`, acc × evidence_iou≥0.3): of
-  GRPO's wrong answers 25 were un-grounded vs 5 grounded, while 18 answers
-  were right *without* grounding (priors + global view). Localisation is
-  where the headroom is — direct support for the §3b iou re-weighting.
-- **One crop bounds iou.** 31/114 val prompts had iou ≡ 0 at all 13
-  checkpoints; a second crop was never worth it under weight 0.5.
-- **Difficulty is bimodal**: late-run, 21% of groups are 0/16 fully correct
-  (gradient rides on partial credit + iou only) and 23% are 14–16/16
-  (near-zero signal).
+  re-grading all 114 val rows) showed haiku's 0.5 was a *refuge verdict* in
+  both directions: of its disputed PARTIALs, 11 deserved FULL and 5 deserved
+  0, and 23.2% of all 34K training verdicts sat in the 0.5 bucket —
+  flattened and partly *noisy* advantage exactly in the mid-difficulty
+  groups where the within-group comparison carries the most signal. Fixed by
+  judge v2 (§3a).
+- **Wrong answers co-occur with missing the window.** val-rft error taxonomy
+  (`results/val-rft/analysis.md`): of GRPO's wrong answers 25 were
+  un-grounded vs 5 grounded; 18 answers were right *without* grounding.
+  Localisation is where the headroom is — but it is a *capability* gap, not
+  an incentive gap: within an acc-tied group iou already fully determines
+  the ranking at any positive weight (§3b), and the policy still plateaued
+  at 0.21.
+- **One crop bounds iou** (31/114 val prompts iou ≡ 0 at all 13
+  checkpoints), and multi-crop is out of scope for this round (§3d).
 
-## 2. What round 1 ruled out: lr and batch size
+## 2. What round 1 ruled out: lr and batch as stability knobs
 
 The train-reward sawtooth (step-to-step std 0.11–0.18) is **sampling noise
 from 8 prompts/step, not lr instability**. Two independent proofs
@@ -54,253 +66,269 @@ the val curve — all clean in round 1. Keep `TRAIN_BS=8`, `GROUP_SIZE=16`
 (K is the within-group baseline reliability and must not shrink;
 GRPO_NOTES §4; RAM ceiling rules out larger batch anyway).
 
-## 3. The changes
+Scope note: this section rules lr out as the *oscillation* driver. It says
+nothing about the plateau — that attribution question is settled separately
+by the phase-slope + saturation measurements in GRPO_RESULTS §4 (also not
+lr). "Raise the lr" is contraindicated by the same table: round 1's
+highest-lr phase was its slowest-learning phase. A 30-step probe recipe for
+a higher-lr cosine exists in the session notes if that is ever revisited;
+it buys speed-to-plateau at best, not a higher plateau.
 
-One axis changes: **the incentive structure** — the reward signal (judge +
-weights + shaping) plus the §3d prompt nudge that makes the shaped
-behaviour sampleable at all, with the lr schedule as a free rider. Data,
-lengths, KL, arch, batch/K all stay, so improvements are attributable to
-that axis (the nudge and the shaping are entangled by design — they only
-work together).
+## 3. The changes (all implemented 2026-09-01; defaults in the scripts)
 
-### 3a. Tighten the judge — **DONE 2026-09-01 (separate judge session),
-and it went further than this plan asked**
+This is a **recipe-level comparison, not a single-axis ablation**: judge v2
++ constant lr + the epoch-boundary curriculum all change together, so
+`grpo_v2` vs `grpo-vanilla` reads as "recipe v2 vs v1". Accepted knowingly —
+the three changes point the same way and none is worth 60h of isolation.
+The start model is shared with round 1, so round 1's +9 pt is inherited,
+not re-earned.
 
-Shipped in `agentic_tvg/judge.py` as instrument v2: `claude-sonnet-5` (not
-haiku+rubric-line — haiku+reasoning topped out at 75% consistency),
-question-anchored rubric (unasked detail / wording never demote;
-scene-description non-answers = 0), reasoning then a `VERDICT:` line,
-default cache `data/processed/judge_cache_v2.jsonl` (old cache untouched —
-the file split resolves the cache-key trap). Effect: PARTIAL bucket
-47 → 11 rows on the 114-row val. Note: Claude 5 API rejects `temperature`;
-the param was removed.
+Effect sizes, measured by re-scoring round 1's own 34,048 trajectories
+(GRPO_RESULTS §4 "Pre-flight"): judge v2 reorders within-group advantage at
+Spearman 0.874 / 22.8% of groups change their best trajectory; the iou
+re-weight 0.992 / 3.1%. **Round 2 is a judge round**; the curriculum's job
+is to keep the signal alive long enough for that to matter.
+
+### 3a. Judge v2 — DONE, and now the code default
+
+Shipped in `agentic_tvg/judge_v2.py`: `claude-sonnet-5` (haiku+reasoning
+topped out at 75% consistency), question-anchored rubric (unasked detail /
+wording never demote; scene-description non-answers = 0), reasoning then a
+`VERDICT:` line, cache `data/processed/judge_cache_v2.jsonl` (separate from
+v1's; cache rows record model+rubric and mismatched rows never load).
+Effect: PARTIAL 47 → 11 rows on the 114-row val.
+
+**Selection is the `JUDGE_V` env var, default `2` since 2026-09-01**
+(reward.py), exported and echoed by run_grpo.sh's `[recipe]` line so the
+instrument is recorded in every console log. `JUDGE_V=1` reproduces v1
+numbers. v1/v2 verdicts are never comparable; quote every acc with its
+instrument version.
 
 **v2 baselines already measured** (114-row rl_val, v1 in parens):
 SFT 0.5395 (0.4561) · **GRPO 0.5965 (0.5044)** · RFT 0.5702 (0.5044).
-Quote every acc with its instrument version; v1/v2 numbers never mix.
 
-**The selection experiment** (archived `results/val-rft/judge_audits/`, all
-on the 114-row val): a 2×2 of model × rubric plus a reasoning ablation.
-haiku-one-word vs opus-v1: 82%; haiku+reasoning: 75% (gap is model, not
-format); sonnet-v1: 84% (model alone not enough); under rubric v2 haiku
-still hedged (27 PARTIALs) while sonnet dropped to 11. Terminal validation:
-**opus itself re-run under rubric v2 agrees with the shipped sonnet-v2 on
-103/114 (90%)** — the highest agreement in the chain; residual
-disagreements are genuine boundary calls, opus slightly more generous
-(8:3, −2.2 acc pts).
+What v2 buys, precisely: **ranking correctness, not gradient magnitude.**
+The 0.5 refuge was noise in both directions, so mid-difficulty groups were
+partly ranked by judge noise; v2 replaces that with a decision. It does not
+relieve saturation — simulated on round 1's rollouts it *raises* the
+zero-acc-variance share (21.4% → 26.9% in the last band) because 15×FULL +
+1×PARTIAL groups collapse to 16×FULL. The curriculum (§3e) is what
+addresses saturation.
 
-Known caveats and pending fixes (assessed 2026-09-01, this session):
-- The opus-v2 terminal validation covered only the **RFT arm's** answers;
-  GRPO/SFT arms untested against opus-v2 (likely transfers; single-point
-  evidence). Rubric v2 was also iterated on the same 114 rows it was
-  validated on — spot-check a sample of *training*-pool verdicts before
-  the paper.
-- sonnet-v2 sits at the strict end of the pair: externally quoted v2 acc
-  likely underestimates ~2 pts vs an opus reference.
-- Determinism rests on the append-only cache, not on sampling: the Claude 5
-  API takes no temperature, and even v1's cache held 45 same-key verdict
-  flips (worker races). The three follow-up fixes are **DONE 2026-09-01
-  (this session)**: (1) unparseable/truncated verdicts now retry with a
-  doubled token budget instead of stopping the run (unit-tested: retry,
-  exhaustion, and cache-hit paths; live smoke passed); (2) docstring no
-  longer claims "temp 0"; (3) cache loading now skips rows whose recorded
-  model/rubric don't match the live instrument (all 295 existing v2 rows
-  pass the filter).
+Selection experiment, terminal validation (opus-v2 agrees with shipped
+sonnet-v2 on 103/114), and caveats — unchanged from the first draft:
+opus-v2 validation covered only the RFT arm; rubric v2 was iterated on the
+same 114 rows it was validated on (spot-check training-pool verdicts before
+the paper); sonnet-v2 sits ~2 pts strict of an opus reference. The three
+judge.py hardening fixes (retry on truncation, docstring, cache instrument
+filter) are done. **Cost note: the machine wipe (2026-09-01) lost the v2
+cache (295 rows) — the run starts cold: ~34K fresh sonnet-5 verdicts.
+Estimate the API bill before launch.**
 
-### 3b. Re-budget the reward — new `compute_score_qa2` in `reward.py`
+### 3b. Reward `compute_score_qa2` — DONE, smaller than first drafted
 
-Keep `compute_score_qa` untouched (comparability; `REWARD_FN` env switch
-already exists). New function:
+`R = 0.5·format + judge_acc + TIME_WEIGHT_V2 · evidence_iou`, with
+`TIME_WEIGHT_V2 = 1.0` (round 1: 0.5). Range [0, 2.5] — the score scale is
+not comparable across rounds; everything else about the dict (keys, val
+metrics) is unchanged. `compute_score_qa` is frozen for round-1
+reproduction (with `JUDGE_V=1`).
 
-| term | round 1 | round 2 | rationale |
-|---|---|---|---|
-| format | `+0.5 if ok` | `0 if ok else −0.5` | **gradient-neutral by construction** — see note below the table |
-| acc (judge) | {0, 0.5, 1} | same, rubric v2 | §3a |
-| evidence_iou | `+0.5 × iou` | `+1.0 × iou` (`TIME_WEIGHT=1.0`) | iou is the plateaued target; with the stricter judge removing free half-credit, iou also becomes the main gradient source in all-wrong groups |
-| multi-crop shaping | — | `+0.25 × max(0, iou_best − iou_first)` | pays only for a *productive* second crop; ≡ 0 for the current one-crop policy, so it is pure upside toward the behaviour that never emerged |
+Two things the first draft asked for are deliberately absent:
 
-**Note on the format flip:** it changes no gradient at all. The new form is
-a uniform −0.5 shift on every trajectory (ok: +0.5→0, fail: 0→−0.5; the
-ok/fail gap stays 0.5), and GRPO's group-normalized advantage
-`(r − mean)/std` is exactly invariant to a constant shift. The change is
-pure bookkeeping, kept for two small reasons: `critic/rewards/mean` becomes
-a pure task score (acc + iou terms only — directly comparable to the acc
-curve, and no longer inflated by a saturated constant), and the explicit
-−0.5 keeps the decode-failure margin visible. The gradient changes in this
-round are the judge rubric, TIME_WEIGHT, and the shaping term — nothing
-else. Dropping the format term entirely would also be near-equivalent
-(4 failures in 34K trajectories); either is fine, deleting it is not worth
-a code path divergence from `_base_score`.
+- **The format flip** (`+0.5 if ok` → `0/−0.5`): dropped (user call,
+  2026-09-01). It is a uniform constant shift; GRPO's group-normalized
+  advantage is exactly invariant to it. The bonus form stays and the reward
+  floor stays 0.
+- **The multi-crop shaping term**: dropped with its enabler (§3d). Round 1
+  sampled 22 multi-crop trajectories in 34,048, so it would be ≡ 0.
 
-Reward range shifts from [0, 2.0] to [−0.5, 2.25]; all dashboards re-scale.
+On the weight itself, measured (GRPO_RESULTS §4): near-inert — within-group
+advantage Spearman 0.992, 3.1% of group winners change, and **inside an
+acc-tied group any positive weight yields the identical ranking**
+(scale-invariance; 0/1,860 tie-break flips across 0.5…5.0). What 1.0 buys
+is cross-tier authority: a 0.5 iou gap can overturn one acc tier (at 0.5 it
+cannot). Kept at 1.0 with that understanding; it is not a grounding lever
+and no iou target hangs on it (§5).
 
-### 3c. lr schedule: constant, not cosine
+### 3c. lr schedule: constant — hygiene, not a lever
 
-Round 1's plateau (step 180+) coincided with lr decaying below ~3e-6 — the
-schedule froze learning during the phase where the new reward terms would
-need it most. §2 showed decay buys no stability here. Round 2: verl's
-default `constant` at 1e-5 (pass
-`actor_rollout_ref.actor.optim.lr_scheduler_type=constant` through
-`run_grpo.sh`'s `"$@"` — the script already sets `=cosine` earlier on the
-same command line, and Hydra takes the last occurrence; if the installed
-Hydra instead errors on the duplicate key, edit the two lr-scheduler lines
-in the script directly. Verify `actor/lr` is flat in the first logged
-steps either way). Side benefit: TOTAL_STEPS stops
-being a schedule denominator, so extending or stopping early no longer
-bends the lr curve (the round-1 resume footgun disappears).
+Constant 1e-5 (verl's default; run_grpo.sh sets it since 2026-09-01).
+Why it is safe: round 1 ran ~50 steps at 1e-5 with its lowest grad_norm
+(0.051) and gentlest entropy slope; entropy ended at 0.84 with the fastest
+observed decline only −0.147/100 steps — far from collapse. Why it is
+*only* hygiene: the plateau is saturation, not step size (§1), so no
+unfreezing is expected from this. Its real benefits: no TOTAL_STEPS-as-
+anneal-denominator, which matters twice now — the horizon is `EPOCHS` and
+the stage-2 pool is smaller, either of which would bend a cosine curve at
+the resume seam.
 
-Fallback if entropy falls fast + grad_norm rises (the collapse signature,
-GRPO_NOTES §4): resume with cosine `min_lr_ratio=0.3`.
+Collapse fallback unchanged (GRPO_NOTES §4 signature — entropy sustained
+fall + grad_norm sustained rise): resume the latest checkpoint with
+`actor_rollout_ref.actor.optim.lr_scheduler_type=cosine
+actor_rollout_ref.actor.optim.min_lr_ratio=0.3`.
 
-### 3d. Multi-crop reachability — the shaping term needs an enabler
-(evidence added 2026-09-01)
+### 3d. Multi-crop: out of scope for round 2
 
-Counted crop calls per trace across every data stage:
+The data-injection enabler (mixing `sft_longvideoreflection_3k` 2-crop
+traces into SFT/RFT) was abandoned 2026-09-01 after measurement —
+`V2_PLAN.md` has the full post-mortem. The short version: those traces
+pinpoint a median 7 s window on ~944 s videos (a 124× narrowing; only
+9/1,562 start coarse) — a move our 128-frame global view (7.4 s/frame
+there) gives the model no evidence for — while the RL pool tops out at
+302 s, where the first crop is usually right and round 1 rationally
+extinguished second crops (22 sampled, mean score below group mean). The
+prompt-nudge fallback goes with it (it would change the train+val prompt
+distribution for a behaviour with no payoff in-pool).
 
-| stage | multi-crop share |
-|---|---|
-| LongVT sources we use: `rft_selftrace_15k3` / `sft_geminicot_4k8` | 5/15,354 and 1/4,881 (~0.03%) |
-| LongVT `sft_longvideoreflection_3k` (**unused** — videos 253.6 GiB) | **54.5%** (1,637/3,004 have 2 crops) |
-| our `sft_train.parquet` (1,923 traces) | **0%** — every trace exactly 1 crop |
-| our `rft_train.parquet` | 0% **by construction** — extract_rft.py's structural parse requires "exactly one crop_video call" (DATA.md §8) |
-| round-1 GRPO rollouts (34,048, temp-sampled) | 22 (0.065%) — 20 in the early half, 2 late; mean(score − group mean) = **−0.038** |
+`num_tool_calls` stays on the monitoring list as an observable, not a goal.
+`extract_rft.py`'s exactly-one-crop parse stays as-is deliberately — with
+multi-crop out of scope, re-freezing single-crop in a future RFT pass is
+consistent, and the parse is one line to relax if scope changes.
 
-Three facts compound: the prior has essentially zero multi-crop support
-(the one LongVT file that teaches crop→look→re-crop is the one we skipped
-for disk); the RFT distillation structurally re-hardened single-crop; and
-in round 1 the rare sampled multi-crop attempt scored *below* its group
-mean, so GRPO actively extinguished it (20 → 2 across the run). The round-2
-policy starts from the RFT model, i.e. with even less multi-crop mass than
-round 1 started with. **The §3b shaping term therefore fires ~never on its
-own** — it is kept (harmless, and correct if the behaviour appears), but it
-needs one of these enablers:
+### 3e. Epoch-boundary curriculum — ADOPTED (was: deferred to round 3)
 
-- **A. Data injection (DECIDED 2026-09-01 — the primary enabler):** mix a
-  subset of `longvideoreflection_3k`'s 2-crop traces into the RFT stage.
-  Feasibility confirmed the same day:
-  - The 1,637 2-crop traces map to **330 unique videos** (1,562 traces
-    with parseable paths; one malformed path accounts for the rest), all
-    present across `longvideoreflection_1..27.zip` on
-    `longvideotool/LongVT-Source`.
-  - Every zip entry is **ZIP_STORED (uncompressed)**, so single mp4s can
-    be pulled by byte-range through `HfFileSystem` — no need for the
-    253.6 GiB archives. Video→(zip, size, trace-count) map saved to
-    `data/processed/reflection_video_map.json`.
-  - Budget curve (greedy by traces/GiB): **~5 GiB → 307 traces / 44
-    videos; ~10 GiB → 456 / 70; ~15 GiB → 576 / 88**. Recommended tier:
-    ~10 GiB (456 traces ≈ 17% of a combined rft2 mix). Disk fits (45G
-    free; delete mp4s after rendering, as with geminicot).
-  - **Re-render into OUR template** (system prompt, strict-format user
-    instruction, 128-frame global view, tool schema) via
-    `render_traces.py` — needs a small extension to render two crop
-    windows per trace, and the same review gate as the RFT data. Because
-    the rendered prompt dialect is ours, the prompt distribution does NOT
-    change → round-1 comparability survives.
-  - Quality caveat (sampled 2026-09-01): the reflection traces are
-    synthetic wrong-window + right-window pairs — the second crop's
-    timestamp appears without derivation (e.g. first crop 260–265s, second
-    2648–2673s, narration never explains the jump). They teach the retry
-    *format*, not a search strategy. That is exactly what unlocking
-    needs; don't expect them to teach clever search.
-- **B. Prompt nudge (fallback only):** extend the system prompt to invite
-  re-cropping. Kept in reserve in case A's traces fail review — it changes
-  the train AND val prompt distribution, which would force a new-prompt
-  baseline and muddy round-1 comparisons.
-- Also fix forward: future `extract_rft.py` passes must not hard-require
-  single-crop, or every RFT cycle re-freezes the behaviour.
+The direct counter to §1's saturation. Run epoch 1 on the full 1,068-prompt
+pool, then drop the prompts the policy has mastered and run epoch 2 on the
+rest. The first draft deferred this as "changes the data axis; also epoch
+math"; the horizon is per-epoch now, so the epoch-math objection is void,
+and the data-axis objection is subsumed by the recipe-level framing (§3).
 
-### 3e. Deferred (do NOT bundle into this run)
+Calibration on round 1 (each prompt visited once per epoch; 1,044 prompts
+with both visits): a single 16-rollout visit predicts next-epoch saturation
+well —
 
-- **Difficulty rebalance** — dropping the ~23% of prompts that were ≥14/16
-  correct late in round 1. Real gains available, but it changes the data
-  axis and breaks attribution; also epoch math. Round 3 candidate, using
-  the per-prompt stats already computed from `rollouts_grpo267/`.
-- **Judge model up-tier** — only if §4.2 calibration fails.
-- **Larger batch for curve smoothness** — cosmetic (§2); costs linear wall
-  time; use the moving average instead.
+| epoch-1 visit acc | n | mastered again in epoch 2 | zero-variance in epoch 2 |
+|---|---:|---:|---:|
+| ≥ 0.875 | 163 | 85.3% | 51.5% |
+| 0.75–0.875 | 113 | 56.6% | 21.2% |
+| 0.5–0.75 | 245 | 15.1% | 5.3% |
+| < 0.5 | 523 | ~0% | — |
+
+Cutting at **visit acc ≥ 0.75** drops 26.4% of prompts and would have cut
+epoch-2 mastered groups 23.1% → 4.9% (zero-variance 16.7% → 8.6%). The hard
+end is kept — all-wrong groups still carry iou/partial-credit gradient.
+Threshold 0.75 is the default in `data_prep/filter_mastered.py`; the cut is
+computed from **stage 1's own rollouts** (v2-judged), never from round-1
+numbers (v1 scale — the table above only shows the predictor works).
+
+Mechanics (all verified against verl 0.9.0 source):
+
+1. Stage 1 `EPOCHS=1` ends at step 133 and **saves there** (`is_last_step`
+   forces a save regardless of save_freq).
+2. `python data_prep/filter_mastered.py --rollouts results/grpo-v2/rollouts`
+   → `rl_train_ep2.parquet` (+ selection json listing every dropped
+   question with its visit acc — skim it before stage 2). It prints the
+   exact stage-2 launch line.
+3. **`mv results/grpo-v2/ckpt/global_step_133/data.pt{,.bak}` before the
+   resume.** The dataloader-state restore decides "at epoch boundary" using
+   the NEW loader's length (133 % ~98 ≠ 0), so without this it loads a
+   133-batch state into a ~98-batch loader. Removing data.pt hits the clean
+   start-from-scratch branch.
+4. Stage 2, same `EXP_NAME` (resume_mode=auto picks up the checkpoint):
+   `EPOCHS=1 TOTAL_STEPS=<133 + kept//8> TRAIN_FILE=.../rl_train_ep2.parquet
+   bash run_grpo.sh`. The explicit TOTAL_STEPS is required — the derived
+   total (~98) is below the resumed global_step. ~231 steps total vs
+   round 1's 267.
+
+What carries across the seam: adapter + optimizer state (resume), and the
+KL anchor — `ref_in_actor` references the base minus adapter, so both
+stages stay anchored to the SFT policy. Val (full 114 rows every 20 steps)
+is untouched and comparable throughout.
+
+Still deferred: judge model up-tier (only if a training-pool calibration
+audit fails), larger batch for curve smoothness (cosmetic; use the moving
+average).
 
 ## 4. Order of operations
 
+0. **Environment rebuild** (the box was wiped and re-cloned 2026-09-01;
+   87G free): `.env` restored (ANTHROPIC_API_KEY for the judge, HF_TOKEN);
+   `results/sft-mix/merged` pulled from the Hub (hf_pull.sh — in progress);
+   `bash prepare_data.sh` for annotations + selfqa/rl_val videos + base
+   model, then `render_traces.py`/`extract_rl.py` regenerate
+   `data/processed/` (RL training decodes the global view from the selfqa
+   mp4s at rollout time — the videos are required, not just the parquets).
+   Geminicot only matters if SFT is ever re-run; skippable now.
 1. **GPU lock** per protocol (`/tmp/gpu-owner.lock`; queue via SendMessage,
    never `ray stop --force`).
-2. **Build the reflection subset** (no GPU needed): fetch the ~10 GiB /
-   70-video / 456-trace tier by byte-range from the reflection zips using
-   `data/processed/reflection_video_map.json`; extend `render_traces.py`
-   to render two crop windows per trace; render into our template; delete
-   the mp4s after rendering (geminicot precedent). **Review gate**: user
-   reads a sample of rendered traces (rft_review precedent) before any
-   training touches them.
-3. **Train `rft2`** = `rft_train.parquet` (2,237) + reflection subset
-   (~456, ≈17% of the mix), from `results/grpo-vanilla/merged`, via
-   `run_rft.sh` with new `TRAIN_FILE`/`EXP_NAME`. ~2h at the measured
-   ~70 s/step. Context: the plain single-crop RFT run has **already been
-   merged and evaluated** (2026-09-01) and came out neutral-to-weak vs
-   GRPO — v2 acc 0.5702 vs 0.5965, iou 0.2206 vs 0.2178, tool calls ≡ 1.0
-   — so it is the no-reflection ablation point, and rft2's justification
-   is the **behaviour unlock**, not an acc gain. Disk note: RFT saves
-   crashed twice on ENOSPC (needs 2×19G transiently); with only 45G free,
-   fetch/render/delete the reflection videos in batches.
-4. **Merge + gate eval**: `merge_adapter.py --ckpt results/rft2/ckpt
-   --base results/grpo-vanilla/merged --out results/rft2/merged`, then one
-   `val_only` run (judge v2 is the live default; v1 comparability comes
-   from the frozen v1 numbers). Two readouts decide the round-2 start:
-   - `num_tool_calls/mean` — the unlock. If still ≡ 1.0 after SFT on 17%
-     2-crop data, escalate to §3d option B (prompt nudge) before burning
-     60h of RL.
-   - v2 acc — if rft2 lands well below GRPO's 0.5965 (beyond ~1 SE), start
-     round 2 from `results/grpo-vanilla/merged` instead and accept the
-     weaker multi-crop prior (or raise the reflection share and retrain —
-     it is a ~2h loop).
-5. **Implement** `compute_score_qa2` (§3b: format→penalty,
-   TIME_WEIGHT=1.0, multi-crop shaping; judge v2 comes along for free as
-   the live default); unit-test against a handful of cached transcripts.
-   The three §3a judge.py fixes are already done (2026-09-01).
-6. **Launch**:
-   ```bash
-   REWARD_FN=compute_score_qa2 EXP_NAME=grpo2 \
-   MODEL_PATH=results/rft2/merged \
-   bash run_grpo.sh actor_rollout_ref.actor.optim.lr_scheduler_type=constant
-   ```
-7. **Final numbers** (after the run): per-checkpoint reads via
-   `data_prep/score_rollouts.py` (means) and `data_prep/analyze_rollouts.py`
-   (error taxonomy + paired flips vs a reference dump — the val-rft
-   analysis is the worked example); the shipping benchmark is
-   **VideoSIAH-Eval** (652 open-ended QA, answer-acc only — no GT windows,
-   evidence_iou ≡ 0 there) via `run_benchmark.sh`, which streams the ~109G
-   video set through the small disk in zip-sized chunks, ~6–11h per model,
-   resume-safe. Budget one pass for grpo2's final checkpoint and, if not
-   already done, one for grpo-vanilla as the comparison point — same judge
-   version on both.
-   `TRAIN_FILE` stays `rl_train.parquet` (the RFT parquet is SFT traces,
-   not RL prompts). TOTAL_STEPS=267 (same 2-epoch horizon; with constant lr
-   it is now only a stopping point — the overshoot asymmetry argument from
-   run_grpo.sh still favours sizing long). All RAM/plasma/glibc settings
-   unchanged — the ladder is solved, don't touch it.
+2. **Smoke** (~30 min, throwaway): `TOTAL_STEPS=3 EXP_NAME=smoke bash
+   run_grpo.sh`, then: `[recipe]` line says `REWARD_FN=compute_score_qa2
+   JUDGE_V=2`; judge v2 verdicts land in `judge_cache_v2.jsonl`; reward ≤
+   2.5; and **read the judge $/step off the console** — 3 steps × 128
+   trajectories is enough to extrapolate the ~34K-verdict bill before
+   committing. The step-0 val it runs (114 rows) caches verdicts the real
+   run will reuse. `rm -rf results/smoke`.
+3. **Stage 1**: `EPOCHS=1 bash run_grpo.sh` (defaults: grpo_v2, qa2,
+   JUDGE_V=2, constant lr, from results/sft-mix/merged) — 133 steps, ~30h.
+   No pre-run gate (user call 2026-09-01): monitoring is in-flight, and
+   checkpoints every 20 steps bound any loss. **First-hours reads, nothing
+   stops for them**:
+   - the step-0 val prints before training starts (`val_before_train`):
+     acc should land ≈ **0.5395** (SFT model on the v2 instrument). A big
+     miss is judge wiring, not the model — that one IS worth killing the
+     run for, and it shows within the first ~20 min.
+   - by the step-20/40 vals, sanity against round 1's opening: entropy
+     slope ≈ −0.10/100 with grad_norm ~0.05 (much steeper + climbing
+     grad_norm = §3c collapse signature → stop, fall back), format
+     0.487–0.5, response_length ~3.2K flat. Train score is on the
+     [0, 2.5]/v2 scale — compare slopes, not levels.
+   (If raising the lr is ever revisited, a `TOTAL_STEPS=30` capped run at
+   `lr=2e-5 cosine min_lr_ratio=0.3` is the probe recipe — §2.)
+4. **Between stages** (§3e): filter_mastered → skim the dropped list →
+   `mv .../data.pt{,.bak}` → launch stage 2 with the printed line (~22h).
+5. **Merge + eval**: `python merge_adapter.py --ckpt results/grpo-v2/ckpt
+   --out results/grpo-v2/merged --base results/sft-mix/merged`; delete ckpt
+   after verifying. Checkpoint reads via `score_rollouts.py` /
+   `analyze_rollouts.py` (val-rft analysis is the worked example).
+6. **Final numbers**: VideoSIAH-Eval via `run_benchmark.sh` (~109G streamed
+   in chunks, ~6–11h/model) for grpo_v2's final checkpoint AND
+   grpo-vanilla (never run yet) — same judge version on both. Report it as
+   an out-of-budget transfer benchmark: its videos average 1,688 s against
+   our ≤302 s training regime and 128-frame view (V2_PLAN post-mortem, §2).
+7. **Stage-3 decision** (rft_v2): only if grpo_v2's rollouts look worth
+   distilling; `extract_rft.py` defaults already point at
+   `results/grpo-v2/rollouts` with the `rft_v2` prefix, `run_rft.sh` at
+   `results/grpo-v2/merged`.
+
+All RAM/plasma/glibc settings unchanged — the ladder is solved, don't
+touch it. Checkpoint transient is 2×17G; with 87G free the round-1 ENOSPC
+mitigations are unnecessary.
 
 ## 5. Success criteria and monitoring
 
-Targets (val, new-judge scale, vs the §4.4 re-judged baselines):
+Targets (val, v2-judge scale, vs the §3a baselines; n=114 → SE ±4.7 pts,
+so compare 3-checkpoint means, never single readings):
 
-- **evidence_iou off the plateau: > 0.30** (round 1: 0.21) — the primary
-  goal; both new weight and shaping aim here.
-- **num_tool_calls/traj > 1.2** — the multi-crop behaviour actually
-  emerging (round 1: 1.00 flat).
-- **v2 acc above 0.5965** (grpo-vanilla's closing checkpoint on the v2
-  instrument) **by > 1 SE (±4.7 pts)** — remember n=114: single readings
-  are noise, compare 3-checkpoint means (GRPO_RESULTS §2 caveat).
-- **Mechanism check** (`analyze_rollouts.py` taxonomy): if the iou work is
-  doing what it claims, the "wrong & un-grounded" cell (25 rows for
-  grpo-vanilla) should shrink into "grounded & correct" — acc gains with
-  that cell unchanged would mean better priors, not better grounding.
+- **Primary: v2 acc above grpo-vanilla's 0.5965 by > 1 SE** — i.e. a
+  3-checkpoint mean ≥ ~0.64. Expected mechanism: cleaner ranking in
+  mid-difficulty groups (judge) + signal kept alive in stage 2
+  (curriculum).
+- **Test-during ladder**: val auto-fires every 20 steps (full 114 rows);
+  the step-0 val and the step-20/40 reads (§4.3) are the first scheduled
+  looks; then at the stage boundary and mid-stage-2, run
+  `analyze_groups.py --signal` on the live `rollouts/` — stage 2's
+  mastered share should sit well below round 1's late-run 29.5% (the §3e
+  counterfactual says ~5% at the boundary). If it climbs back fast, the
+  pool is smaller than the policy's learning rate — early-stop on the val
+  plateau rather than re-cutting mid-stage.
+- **Observables, no targets**: evidence_iou (capability-bound at ~0.21;
+  any rise is upside), num_tool_calls (≡1.0 expected — §3d).
+- **Mechanism check** (`analyze_rollouts.py` taxonomy vs grpo-vanilla's
+  val dump): acc gains should come with the "wrong & un-grounded" cell
+  shrinking or stable — shrinking into "grounded & correct" would be
+  grounding improving as a side effect; growing would mean priors-only
+  gains. Either is reportable; know which one happened.
 
 Guard rails while running:
 
 - entropy sustained fall + grad_norm sustained rise = collapse signature →
-  §3c fallback.
-- `response_length/mean` leaving its ~3.2K baseline = hacking / plasma
-  early-warning (GRPO_NOTES §3b). A second crop adds ~4.6K legitimately —
-  expect drift toward ~5–8K *if* multi-crop emerges; runaway to the 16,384
-  ceiling is the pathological version.
-- train reward: read the 20-step EMA only (§2).
-- format penalty: should stay ≈ 0; a persistent negative mean means the
-  penalty-only change broke something — revert to bonus form.
+  §3c fallback (checkpoints every 20 steps bound the loss).
+- `response_length/mean` leaving its ~3.2K flatline = hacking / plasma
+  early-warning (GRPO_NOTES §3b).
+- format_score mean should stay ≈ 0.487–0.5 as in round 1 (bonus form
+  unchanged).
+- train reward: read the 20-step EMA only (§2); note the [0, 2.5] scale —
+  round-1 dashboards don't transfer.
+- the `[recipe]` console line is the instrument record: EXP_NAME,
+  REWARD_FN, JUDGE_V, MODEL_PATH, TRAIN_FILE, EPOCHS per launch — check
+  it at every (re)start, especially that stage 2 shows the ep2 parquet.

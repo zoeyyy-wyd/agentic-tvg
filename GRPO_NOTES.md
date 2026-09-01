@@ -207,16 +207,20 @@ slower and the run last longer. With both pinned, crest ≈ 150G < 179G — step
   ~36G of KV for one sequence, vLLM refuses to start.
 - `truncation=error`: an over-long prompt fails loudly instead of silently.
 
-**Optimizer and horizon**
-- cosine lr 1e-5 → 1e-6 (`min_lr_ratio=0.1` keeps a floor: stopping early
-  never leaves dead final steps). `TOTAL_STEPS=267` (2 epochs) is the
-  **denominator of the anneal, not a cap**: the scheduler checkpoints only its
-  step counter; the curve is rebuilt from config at start — resume with a
-  different value and the lr jumps. Correct resume: `bash run_grpo.sh`, no
-  arguments.
-- `total_epochs=100` is a sentinel: the epoch loop must outlive 267 steps
-  (one epoch is only ~133); if total_training_steps were ever removed,
-  100 epochs = 13,350 steps.
+**Optimizer and horizon** (round-2 form, 2026-09-01; the round-1 form is
+kept below it because grpo-vanilla ran under it)
+- **constant lr 1e-5** and the horizon is `trainer.total_epochs` (EPOCHS=2
+  default; verl derives 133 steps/epoch from the 1,068-prompt loader at
+  batch 8, drop_last). Constant is hygiene, not a lever — the round-1
+  plateau was pool saturation, not lr decay (GRPO_RESULTS §4) — but it makes
+  the horizon and any resume schedule-free, which the two-stage curriculum
+  (GRPO2_PLAN §3e) relies on. `TOTAL_STEPS` survives as an optional hard cap
+  for short diagnostics and as stage 2's required explicit horizon.
+- Round 1 ran cosine 1e-5 → 1e-6 with `total_epochs=100` as a sentinel and a
+  hardcoded `TOTAL_STEPS=267` as the anneal denominator — under cosine a
+  resume with a different value makes the lr jump (the scheduler checkpoints
+  its step counter; the curve is rebuilt from config). Reproduce with the
+  README's round-1 line; `min_lr_ratio` is inert under constant.
 
 **KL**
 - `use_kl_loss=True, coef=0.001, low_var_kl`; `use_kl_in_reward=False`. KL in

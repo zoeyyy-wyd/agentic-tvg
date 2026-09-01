@@ -1,4 +1,10 @@
-"""Answer-equivalence judge: Anthropic API, LongVT's rubric, temp 0, disk-cached.
+"""Answer-equivalence judge, INSTRUMENT V1: Anthropic API, haiku, LongVT's
+one-word rubric, disk-cached.
+
+**No longer the default** (reward.py: JUDGE_V defaults to "2" since
+2026-09-01 -- see judge_v2.py). Kept because every number under results/
+from before that date was produced by this instrument; reach it with
+`JUDGE_V=1` to reproduce one. v1 and v2 verdicts are never comparable.
 
 R_acc, one instrument (README "Reward"; revised 2026-08-26, the free matcher
 fast-path was removed -- it saved ~$1-3/run and created a matcher-vs-judge

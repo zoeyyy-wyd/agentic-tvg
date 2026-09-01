@@ -8,14 +8,14 @@
 # so the numbers survive a crash, a resume and an rm'd console log. Safe while
 # training is live -- read-only on tb/, a few seconds of CPU.
 #
-#   bash replot.sh                     # results/grpo-vanilla/
+#   bash replot.sh                     # results/grpo-v2/
 #   bash replot.sh grpo-smoke          # any results/<run> with a tb/
 #   bash replot.sh grpo_vanilla        # underscores accepted, hyphenated for you
 
 set -euo pipefail
 cd "$(dirname "$0")"
 
-RUN="${1:-grpo-vanilla}"
+RUN="${1:-grpo-v2}"
 RUN="${RUN//_/-}"                      # EXP_NAME spelling -> results/ spelling
 OUT="results/${RUN}"
 TB="${OUT}/tb"

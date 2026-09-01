@@ -116,19 +116,40 @@ def compute_score_penalty(
 import os as _os
 import re as _re
 
-# R_acc instrument selector (split 2026-09-01). judge.py is the v1 instrument
-# (haiku, one-word rubric) that produced every v1 number in results/;
-# judge_v2.py is the sonnet + question-anchored-rubric instrument. Default v1.
-# Select with the env var, never by editing this import: the instrument a run
-# used is then recorded in its environment and hydra config, not in a diff
-# nobody re-reads. v1 and v2 verdicts are NOT comparable (separate caches).
-if _os.environ.get("JUDGE_V", "1") == "2":
+# R_acc instrument selector (split 2026-09-01; **default flipped to v2
+# 2026-09-01** when the recipe moved to round 2). judge.py is the v1
+# instrument (haiku, one-word rubric) that produced every v1 number in
+# results/; judge_v2.py is the sonnet + question-anchored-rubric instrument
+# and is now the default. Select with the env var, never by editing this
+# import: the instrument a run used is then recorded in its environment and
+# hydra config, not in a diff nobody re-reads. v1 and v2 verdicts are NOT
+# comparable (separate caches) -- pass JUDGE_V=1 to reproduce a v1 number.
+#
+# The default used to be "1" while every reported v2 number came from OFFLINE
+# re-grading (judge_audit2.py over dumped rollouts), so a training run that
+# forgot to export JUDGE_V=2 would silently optimise against v1 for its whole
+# horizon. run_grpo.sh now exports and prints the choice for the same reason.
+JUDGE_V = _os.environ.get("JUDGE_V", "2")
+if JUDGE_V == "2":
     from agentic_tvg.judge_v2 import judge_answer
 else:
     from agentic_tvg.judge import judge_answer
 from agentic_tvg.answer_match import answer_matches, expand_aliases, parse_answer_qa
 
 TIME_WEIGHT = 0.5  # lambda on the evidence-IoU term; 0 disables it (cut ablation)
+
+# Round 2 (GRPO2_PLAN §3b): iou is the plateaued target, so its term doubles.
+# Calibration measured offline on round 1's own 34,048 rollouts (2,128 complete
+# 16-groups, results/grpo-vanilla/rollouts_grpo267): raising 0.5 -> 1.0 leaves
+# the within-group advantage ranking at Spearman 0.992 and changes the winning
+# trajectory in only 3.1% of groups (1.3% over the plateau, step >= 180). So
+# this is NOT the lever that moves iou: inside an acc-tied subgroup iou already
+# decides the ranking at ANY positive weight (verified: 0/1860 tie-break flips
+# across w in 0.5..5.0). What the weight actually buys is cross-tier authority
+# -- how often better grounding may outrank a better answer. At 1.0 the iou
+# spread (std 0.171) reaches 64% of acc's (0.268), i.e. a 0.5 iou gap can
+# overturn one acc tier; at 0.5 it cannot. Quote that, not "pushes grounding".
+TIME_WEIGHT_V2 = 1.0
 
 _TOOL_CALL_RE = _re.compile(r"<tool_call>\s*(\{.*?\})\s*</tool_call>", _re.DOTALL)
 
@@ -155,20 +176,13 @@ def _aliases_of(ground_truth: Any) -> list[str]:
         return []
 
 
-def compute_score_qa(
-    data_source: str = "",
-    solution_str: str = "",
-    ground_truth: Any = None,
-    extra_info: dict | None = None,
-    **kwargs,
-) -> dict:
-    """Verifiable QA reward: format bonus + alias match + evidence IoU.
+def _qa_score(solution_str: str, ground_truth: Any, extra_info: dict | None,
+              time_weight: float) -> dict:
+    """Shared body of compute_score_qa / compute_score_qa2.
 
-    - R_acc: word-level alias containment with the anti-enumeration length cap
-      (answer_match.py). ground_truth carries the frozen alias list.
-    - R_time: best IoU between any crop_video window the policy actually
-      called and extra_info["video_segment"]. No tool call -> 0, so evidence
-      use is rewarded directly.
+    The two public entry points differ ONLY in ``time_weight``; everything
+    else -- format bonus, judge instrument, window parsing -- is common, so
+    the round-1 function keeps returning exactly what it always did.
     """
     parsed = parse_answer_qa(solution_str or "")
     fmt = FORMAT_BONUS if parsed.format_ok else 0.0
@@ -200,7 +214,7 @@ def compute_score_qa(
     evidence_iou = max((temporal_iou(w, seg) for w in windows), default=0.0) if seg else 0.0
 
     return {
-        "score": fmt + acc + TIME_WEIGHT * evidence_iou,
+        "score": fmt + acc + time_weight * evidence_iou,
         "acc": acc,
         "format_score": fmt,
         "evidence_iou": evidence_iou,
@@ -208,3 +222,57 @@ def compute_score_qa(
         "num_tool_calls": float(len(windows)),
         "judge_used": judge_used,
     }
+
+
+def compute_score_qa(
+    data_source: str = "",
+    solution_str: str = "",
+    ground_truth: Any = None,
+    extra_info: dict | None = None,
+    **kwargs,
+) -> dict:
+    """Round-1 QA reward: 0.5*format + judge R_acc + 0.5*evidence-IoU.
+
+    - R_acc: the cached judge's {0, 0.5, 1} verdict, with word-level alias
+      containment (answer_match.py) as the deliberate-offline fallback only.
+    - R_time: best IoU between any crop_video window the policy actually
+      called and extra_info["video_segment"]. No tool call -> 0, so evidence
+      use is rewarded directly.
+
+    Frozen for comparability with `grpo-vanilla`. Note the instrument behind
+    R_acc is NOT frozen with it -- JUDGE_V selects that, and its default is
+    now v2, so re-running this function does not reproduce a v1 number
+    unless JUDGE_V=1 is also set.
+    """
+    return _qa_score(solution_str, ground_truth, extra_info, TIME_WEIGHT)
+
+
+def compute_score_qa2(
+    data_source: str = "",
+    solution_str: str = "",
+    ground_truth: Any = None,
+    extra_info: dict | None = None,
+    **kwargs,
+) -> dict:
+    """Round-2 QA reward (GRPO2_PLAN §3b as revised 2026-09-01).
+
+    Exactly compute_score_qa with TIME_WEIGHT_V2 = 1.0 on the IoU term.
+    Two things the drafted §3b asked for are deliberately NOT here:
+
+    - **the format flip** (`+0.5 if ok` -> `0 / -0.5`). Dropped on the user's
+      call 2026-09-01: it is a uniform -0.5 shift on every trajectory and
+      GRPO's group-normalized advantage is exactly invariant to a constant
+      shift, so it buys no gradient and costs a dashboard rescale plus a code
+      path that diverges from `_base_score`. The bonus form stays.
+    - **the multi-crop shaping term** `+0.25*max(0, iou_best - iou_first)`.
+      Dropped with its enabler (§3d data injection was abandoned 2026-09-01
+      after the reflection traces were measured against our frame budget).
+      Round 1 sampled 22 multi-crop trajectories in 34,048, so the term would
+      be identically 0; §3 itself notes the shaping and the enabler only work
+      together.
+
+    So the round-2 gradient changes are the judge rubric (v2, now the default
+    instrument) and this weight -- and the offline calibration in the
+    TIME_WEIGHT_V2 comment says the judge is the larger of the two by ~7x.
+    """
+    return _qa_score(solution_str, ground_truth, extra_info, TIME_WEIGHT_V2)
