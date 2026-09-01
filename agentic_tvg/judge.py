@@ -1,4 +1,4 @@
-"""Answer-equivalence judge: Anthropic API, question-anchored rubric v2, temp 0,
+"""Answer-equivalence judge: Anthropic API, question-anchored rubric v2,
 disk-cached.
 
 R_acc, one instrument (README "Reward"; revised 2026-08-26, the free matcher
@@ -8,9 +8,13 @@ EVERY parsed answer goes to this judge, graded FULL 1.0 / PARTIAL 0.5 /
 INCORRECT 0, enumerations and hedges instructed INCORRECT.
 answer_match.py survives as the deliberate-offline fallback and test scorer.
 
-Determinism & audit: temperature 0 plus an append-only JSONL cache keyed by
-(question, gt, normalized answer) -- one verdict per unique triple, ever.
-The cache file doubles as the audit trail for the paper.
+Determinism & audit: the Claude 5 API has no temperature control, so a single
+call is a nondeterministic draw; determinism comes from the append-only JSONL
+cache keyed by (question, gt, normalized answer) -- the FIRST verdict for a
+triple is the verdict, ever after. Rows record model + rubric, and loading
+skips rows from any other instrument, so a cache file cannot silently serve
+another judge's verdicts. The cache file doubles as the audit trail for the
+paper.
 
 Failure semantics (hardened 2026-08-28, after a mid-run credit outage):
   - deliberately off (no ANTHROPIC_API_KEY, or JUDGE_DISABLE=1) -> returns
@@ -78,6 +82,7 @@ _PROMPT = (
 )
 _VERDICT_RE = re.compile(r"VERDICT:\s*(FULL|PARTIAL|INCORRECT)")
 _GRADE = {"FULL": 1.0, "PARTIAL": 0.5, "INCORRECT": 0.0}
+_RUBRIC_V = "v2"   # bump together with _PROMPT/_SYSTEM; gates cache-row loading
 
 def _load_dotenv() -> None:
     """Repo-root .env (gitignored, chmod 600). Shell-exported values win."""
@@ -120,6 +125,12 @@ def _load_cache() -> dict[str, float]:
             for line in _CACHE_PATH.read_text().splitlines():
                 try:
                     rec = json.loads(line)
+                    # _key doesn't encode the instrument, so the row must: a row
+                    # from another model/rubric (v1 rows have no rubric field at
+                    # all) never answers for this one, even if the files get
+                    # mixed up or a JUDGE_MODEL override forgets JUDGE_CACHE.
+                    if rec.get("model") != JUDGE_MODEL or rec.get("rubric") != _RUBRIC_V:
+                        continue
                     _cache[rec["k"]] = float(rec["v"])
                 except (json.JSONDecodeError, KeyError):
                     continue
@@ -130,7 +141,7 @@ def _append(key: str, verdict: float, question: str, gt: str, answer: str) -> No
     _CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _CACHE_PATH.open("a") as f:
         f.write(json.dumps({"k": key, "v": verdict, "q": question, "gt": gt,
-                            "a": answer, "model": JUDGE_MODEL, "rubric": "v2"},
+                            "a": answer, "model": JUDGE_MODEL, "rubric": _RUBRIC_V},
                            ensure_ascii=False) + "\n")
 
 
@@ -185,14 +196,18 @@ def judge_answer(question: str, gt_text: str, answer: str) -> float | None:
         _client = anthropic.Anthropic(timeout=_TIMEOUT_S)
 
     verdict = None
+    last_failure = None
     for attempt in range(_RETRIES):
         try:
             resp = _client.messages.create(
                 model=JUDGE_MODEL,
-                max_tokens=700,   # brief comparison + the VERDICT line (v2: reasoning allowed)
-                # no temperature: the Claude 5 API rejects the param ("deprecated
-                # for this model"). Determinism rests on the append-only cache --
-                # one verdict per (q, gt, normalized answer), ever -- as before.
+                # Brief comparison + the VERDICT line. A response that runs past the
+                # budget gets cut BEFORE the VERDICT line and is unparseable -- and
+                # the Claude 5 API samples nondeterministically (no temperature
+                # control), so a retry is a fresh draw, with double the budget in
+                # case the comparison is genuinely long. Without this, one verbose
+                # borderline case among ~31K training verdicts stops the whole run.
+                max_tokens=700 * (attempt + 1),
                 system=_SYSTEM,
                 messages=[{"role": "user", "content": _PROMPT.format(q=question, gt=gt_text, a=answer)}],
             )
@@ -200,14 +215,17 @@ def judge_answer(question: str, gt_text: str, answer: str) -> float | None:
             hits = _VERDICT_RE.findall(text.upper())
             if hits:
                 verdict = _GRADE[hits[-1]]   # last line wins; reasoning may quote the labels
-            break
+                break
+            last_failure = f"no VERDICT line (stop_reason={getattr(resp, 'stop_reason', '?')})"
         except Exception as exc:
             if attempt == _RETRIES - 1:
                 raise JudgeUnavailable(
                     f"{JUDGE_MODEL} failed {_RETRIES}x ({type(exc).__name__}: {exc})") from exc
-            time.sleep(1.5 * (attempt + 1))
+            last_failure = f"{type(exc).__name__}: {exc}"
+        time.sleep(1.5 * (attempt + 1))
     if verdict is None:
-        raise JudgeUnavailable(f"{JUDGE_MODEL} returned an unparseable verdict")
+        raise JudgeUnavailable(
+            f"{JUDGE_MODEL} gave no parseable verdict in {_RETRIES} attempts ({last_failure})")
     with _lock:
         _load_cache()[key] = verdict
         _append(key, verdict, question, gt_text, answer)

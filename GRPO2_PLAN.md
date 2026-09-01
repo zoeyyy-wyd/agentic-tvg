@@ -99,11 +99,13 @@ Known caveats and pending fixes (assessed 2026-09-01, this session):
   likely underestimates ~2 pts vs an opus reference.
 - Determinism rests on the append-only cache, not on sampling: the Claude 5
   API takes no temperature, and even v1's cache held 45 same-key verdict
-  flips (worker races). Three `judge.py` fixes still open: (1) retry on
-  unparseable/truncated verdicts instead of raising immediately — the one
-  operational risk that can stop a 60h run; (2) module docstring still
-  claims "temp 0" twice; (3) `_key` still ignores model+rubric (isolation
-  is by cache file only).
+  flips (worker races). The three follow-up fixes are **DONE 2026-09-01
+  (this session)**: (1) unparseable/truncated verdicts now retry with a
+  doubled token budget instead of stopping the run (unit-tested: retry,
+  exhaustion, and cache-hit paths; live smoke passed); (2) docstring no
+  longer claims "temp 0"; (3) cache loading now skips rows whose recorded
+  model/rubric don't match the live instrument (all 295 existing v2 rows
+  pass the filter).
 
 ### 3b. Re-budget the reward — new `compute_score_qa2` in `reward.py`
 
@@ -251,9 +253,8 @@ needs one of these enablers:
      it is a ~2h loop).
 5. **Implement** `compute_score_qa2` (§3b: format→penalty,
    TIME_WEIGHT=1.0, multi-crop shaping; judge v2 comes along for free as
-   the live default) **and the three §3a judge.py fixes** — especially the
-   unparseable-verdict retry, before it can kill a 60h run; unit-test
-   against a handful of cached transcripts.
+   the live default); unit-test against a handful of cached transcripts.
+   The three §3a judge.py fixes are already done (2026-09-01).
 6. **Launch**:
    ```bash
    REWARD_FN=compute_score_qa2 EXP_NAME=grpo2 \
