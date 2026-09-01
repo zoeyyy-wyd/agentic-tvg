@@ -1,9 +1,11 @@
-"""Answer-equivalence judge: Anthropic API, LongVT's rubric, temp 0, disk-cached.
+"""Answer-equivalence judge: Anthropic API, question-anchored rubric v2, temp 0,
+disk-cached.
 
 R_acc, one instrument (README "Reward"; revised 2026-08-26, the free matcher
 fast-path was removed -- it saved ~$1-3/run and created a matcher-vs-judge
-grading seam): EVERY parsed answer goes to this judge, graded FULL 1.0 /
-PARTIAL 0.5 / INCORRECT 0, enumerations and hedges instructed INCORRECT.
+grading seam; instrument v2 2026-09-01, see the block above JUDGE_MODEL):
+EVERY parsed answer goes to this judge, graded FULL 1.0 / PARTIAL 0.5 /
+INCORRECT 0, enumerations and hedges instructed INCORRECT.
 answer_match.py survives as the deliberate-offline fallback and test scorer.
 
 Determinism & audit: temperature 0 plus an append-only JSONL cache keyed by
@@ -29,29 +31,53 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import threading
 import time
 from pathlib import Path
 
 from agentic_tvg.answer_match import normalize
 
-JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "claude-haiku-4-5-20251001")
-_CACHE_PATH = Path(os.environ.get("JUDGE_CACHE", "data/processed/judge_cache.jsonl"))
-_TIMEOUT_S = float(os.environ.get("JUDGE_TIMEOUT", "20"))
+# Instrument v2 (2026-09-01). The v1 one-word haiku judge was audited against
+# opus/sonnet second opinions on the 114-row val set (scratchpad audits, and
+# 45 same-normalized-triple verdict flips in the v1 cache):
+#   - haiku(one-word) vs opus: 82% agreement; 16 of 21 disagreements were
+#     haiku's PARTIALs (11 deserved FULL, 5 deserved 0) -- 0.5 was a refuge
+#     verdict, and 30% of all 31K training verdicts sat in it.
+#   - haiku WITH reasoning: 75% vs opus -- the gap is model, not format.
+#   - sonnet + this v2 rubric: PARTIAL bucket 47 -> 11 rows, decisive splits;
+#     haiku under the same rubric still hedged (27 PARTIALs). Hence the
+#     sonnet default. Judge noise feeds GRPO's group-relative advantage
+#     directly, which is why this matters more than the ~$3/1K-call delta.
+# v1 verdicts live in judge_cache.jsonl and are NOT comparable; v2 gets its
+# own cache file. Historic val jsonls can be re-scored offline for ~cents.
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "claude-sonnet-5")
+_CACHE_PATH = Path(os.environ.get("JUDGE_CACHE", "data/processed/judge_cache_v2.jsonl"))
+_TIMEOUT_S = float(os.environ.get("JUDGE_TIMEOUT", "30"))
 _RETRIES = 3
 
-_SYSTEM = "You grade video question answering. Reply with exactly one word: FULL, PARTIAL, or INCORRECT."
+_SYSTEM = ("You grade video question answering. Compare briefly, then end with a line: "
+           "VERDICT: FULL or VERDICT: PARTIAL or VERDICT: INCORRECT")
 _PROMPT = (
     "Question: {q}\n"
     "Reference answer: {gt}\n"
     "Candidate answer: {a}\n\n"
-    "Grade the candidate against the reference (LongVT rubric):\n"
-    "FULL - same answer, wording may differ.\n"
-    "PARTIAL - correct but incomplete, or a correct core with wrong details.\n"
-    "INCORRECT - wrong, contradictory, or lists multiple alternative answers "
-    "/ hedges between options.\n"
-    "Reply with exactly one word."
+    "Grade whether the candidate answers the QUESTION the same way the reference does.\n"
+    "The reference often contains scene details beyond what the question asks; omitting\n"
+    "those NEVER lowers the grade. Wording, casing, punctuation, and brevity never matter.\n\n"
+    "FULL - the candidate's answer to the asked question matches the reference's.\n"
+    "  Extra correct context or omitted unasked detail is still FULL.\n"
+    "PARTIAL - the question asks for several things and the candidate gets some right\n"
+    "  while omitting or missing others; or the right entity with a wrong detail that\n"
+    "  the question explicitly asks about.\n"
+    "INCORRECT - the answer to the asked question is wrong or contradicts the\n"
+    "  reference; or it hedges between alternatives / lists several answers; or it\n"
+    "  describes the scene without actually answering the question.\n\n"
+    "Compare briefly, then end with a line: VERDICT: FULL or VERDICT: PARTIAL "
+    "or VERDICT: INCORRECT"
 )
+_VERDICT_RE = re.compile(r"VERDICT:\s*(FULL|PARTIAL|INCORRECT)")
+_GRADE = {"FULL": 1.0, "PARTIAL": 0.5, "INCORRECT": 0.0}
 
 def _load_dotenv() -> None:
     """Repo-root .env (gitignored, chmod 600). Shell-exported values win."""
@@ -104,7 +130,8 @@ def _append(key: str, verdict: float, question: str, gt: str, answer: str) -> No
     _CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     with _CACHE_PATH.open("a") as f:
         f.write(json.dumps({"k": key, "v": verdict, "q": question, "gt": gt,
-                            "a": answer, "model": JUDGE_MODEL}, ensure_ascii=False) + "\n")
+                            "a": answer, "model": JUDGE_MODEL, "rubric": "v2"},
+                           ensure_ascii=False) + "\n")
 
 
 class JudgeUnavailable(RuntimeError):
@@ -162,18 +189,17 @@ def judge_answer(question: str, gt_text: str, answer: str) -> float | None:
         try:
             resp = _client.messages.create(
                 model=JUDGE_MODEL,
-                max_tokens=4,
-                extra_body={"temperature": 0},   # SDK 1.0 removed the kwarg; the API still takes it
+                max_tokens=700,   # brief comparison + the VERDICT line (v2: reasoning allowed)
+                # no temperature: the Claude 5 API rejects the param ("deprecated
+                # for this model"). Determinism rests on the append-only cache --
+                # one verdict per (q, gt, normalized answer), ever -- as before.
                 system=_SYSTEM,
                 messages=[{"role": "user", "content": _PROMPT.format(q=question, gt=gt_text, a=answer)}],
             )
-            text = resp.content[0].text.strip().upper()
-            if text.startswith("FULL"):
-                verdict = 1.0
-            elif text.startswith("PARTIAL"):
-                verdict = 0.5
-            elif text.startswith("INCORRECT"):
-                verdict = 0.0
+            text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+            hits = _VERDICT_RE.findall(text.upper())
+            if hits:
+                verdict = _GRADE[hits[-1]]   # last line wins; reasoning may quote the labels
             break
         except Exception as exc:
             if attempt == _RETRIES - 1:

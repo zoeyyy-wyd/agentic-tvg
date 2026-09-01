@@ -1,0 +1,26 @@
+RUBRIC V2, n=114
+  haiku-v2 vs sonnet-v2 agreement: 94/114 (82%)   <-- decidability metric
+  haiku-v2: mean=0.5307 dist=Counter({1.0: 47, 0.0: 40, 0.5: 27}) | vs opus-v1 93/114 | vs training-judge 90/114
+  sonnet-v2: mean=0.5482 dist=Counter({1.0: 57, 0.0: 46, 0.5: 11}) | vs opus-v1 85/114 | vs training-judge 75/114
+
+rows where haiku-v2 and sonnet-v2 still disagree:
+  h=0.5 s=1.0 gt='They jump over the ramp on their bike.' a='They perform a jump off the ramp.'
+  h=0.5 s=0.0 gt='A person in a dark hooded jacket then jumps into the leaf pi' a='The leaf pile is disturbed and slightly reduced in size.'
+  h=0.5 s=1.0 gt='He wipes the wooden frame of a double door.' a='A large wooden door.'
+  h=0.5 s=1.0 gt='The camera shifts to a wider perspective, showing more of th' a="The camera moves from a close, low-angle view of the boat's mast and s"
+  h=0.5 s=1.0 gt='The ball enters the goal, and the green team players celebra' a='The player in green number 7 scores a goal and celebrates by raising h'
+  h=0.5 s=1.0 gt='A photo of a baby named Brenya Elizabeth Sullivan with her b' a='A photo of a baby.'
+  h=0.5 s=1.0 gt='He brings a black and green can to his mouth.' a='A metallic can.'
+  h=1.0 s=0.0 gt='It is slid off the left needle.' a='It is slipped off the left needle and onto the right needle.'
+  h=0.5 s=0.0 gt='They perform a split.' a='He performs a handstand on the slackline and a full split while mainta'
+  h=0.5 s=0.0 gt='A match facts screen with an instant replay option is shown.' a='A detailed match summary with team names, scores, and player statistic'
+  h=0.5 s=0.0 gt='The person first walks through an aisle with packaged snacks' a='They walk through a general merchandise aisle, then enter a fresh food'
+  h=0.5 s=1.0 gt='They position themselves on the blocks and then dive into th' a='They jump into the pool.'
+  h=0.5 s=0.0 gt='The athlete wears a white top and uses a white or light grey' a='The pole is yellow and the top is white.'
+  h=0.5 s=1.0 gt='They run forward across the grassy field until the kite beco' a='They run forward while holding the bar and lines high.'
+  h=0.5 s=1.0 gt='He falls down on the ice multiple times.' a='He repeatedly falls or is knocked down by the other player.'
+  h=0.0 s=1.0 gt='The adult in the white hoodie helps the child.' a='An adult in a white shirt and blue jeans.'
+  h=0.5 s=1.0 gt='They wear fingerless gloves, one black and one purple.' a='They are wearing fingerless gloves.'
+  h=1.0 s=0.5 gt='He cleans the lower section of the window from the exterior.' a='They begin cleaning the window from the outside with a squeegee.'
+  h=0.5 s=0.0 gt='The diver enters the vehicle and sits behind the steering wh' a='They examine the interior of the vehicle, including the steering wheel'
+  h=0.5 s=1.0 gt='They are photographed with a cell phone.' a='The red long-sleeved top and blue jeans are laid out together on the b'

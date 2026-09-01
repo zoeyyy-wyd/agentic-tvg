@@ -117,6 +117,8 @@ bash run_sft.sh                          # SFT, ~2 h -> results/sft-mix/
 python merge_adapter.py                  # fold LoRA -> results/sft-mix/merged
 bash run_grpo.sh                         # GRPO, ~58 h -> results/grpo-vanilla/
 bash run_grpo.sh trainer.val_only=True   # the evaluator (any stage, any model via MODEL_PATH=)
+python data_prep/extract_rft.py          # RFT set from rollouts (DATA.md §8)
+bash run_rft.sh                          # RFT, ~3 h -> results/rft/ (wraps run_sft.sh; SMOKE=1 works)
 bash replot.sh                                       # curves any time (runs plot_grpo.py on results/grpo-vanilla/tb)
 ```
 

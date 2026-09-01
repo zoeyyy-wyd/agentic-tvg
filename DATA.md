@@ -38,6 +38,32 @@ data_prep/extract_rl.py                          [~2 s, no decoding]
           (answer_match.expand_aliases: normalize → parenthetical variants
           → number-word variants); validate video/duration/segment
   writes: rl_train.parquet (1,068) · rl_val.parquet (114)
+
+        │  (GRPO training writes rollouts/<step>.jsonl as a side effect)
+        ▼
+data_prep/extract_rft.py                         [~10 min; 2,320 crop windows
+  reads : results/grpo-vanilla/rollouts_grpo267/  re-decoded from mp4s]
+          (34,048 trajectories, 266 step files) + rl_train.parquet
+  does  : 1. keep score > 1.5 — with R = 0.5·format + acc + 0.5·IoU this
+             means "judged correct + format clean + IoU > 0" (11,577 pass);
+          2. structural parse: exactly one crop_video call, strict
+             <think>/<answer> shape (44 dropped) — 11,533 over 861 questions;
+          3. traceback, all three checked per trace: question → rl_train row
+             (unique), prompt-rendered duration == that row's, logged gts ==
+             that row's GT. Zero mismatches measured;
+          4. per question ≤3 traces: exact-dup (a1, final) removed, sort by
+             step desc (late-stage preferred; picked-step quartiles
+             1/152/190/228/267), then answer-diverse pick_traces → 2,320;
+          5. re-execute each logged call through the RL tool's own path
+             (_normalize_window → sample_frames → crop_response_text) and
+             require the rebuilt response text byte-equal to the log —
+             2,320/2,320 passed, so zero train/serve skew is measured, not
+             assumed (§8.2);
+          6. review filter (§8.3, criteria fixed post-review 2026-08-31):
+             −34 traces.
+  writes: rft_train.parquet (2,237) · rft_val.parquet (49, split by video id)
+          · rft_selection.json · rft_review.md · rft_dropped.jsonl
+          · frames_rft/ (67,920 jpgs, 1.3G)
 ```
 
 ### 0.5 Re-rendering discipline
@@ -61,10 +87,12 @@ accepts. The source traces contribute content only.** Concretely, in
    one stray tag cost a 57-minute SFT run).
 
 A third data product accumulates as a side effect of GRPO itself:
-`results/grpo-vanilla/rollouts/<step>.jsonl` — every trajectory the policy
-generated, with full text and per-component rewards. That is the raw pool for
-the stage-3 RFT set (selection recipe: README "RFT"); nothing needs re-downloading
-to build it, only the crop frames are re-decoded from mp4s already on disk.
+`results/grpo-vanilla/rollouts_grpo267/<step>.jsonl` (renamed from `rollouts/`
+after the run finished — a rerun under the same EXP_NAME overwrites the files
+one by one) — every trajectory the policy generated, with full text and
+per-component rewards. That is the raw pool the stage-3 RFT set was built from
+(`data_prep/extract_rft.py`, §8); nothing needed re-downloading, only the crop
+frames were re-decoded from mp4s already on disk.
 
 Deterministic end to end (seed 0, no wall-clock inputs): same downloads →
 byte-same allocation and rows. Changing GLOBAL_NUM_FRAMES or any prompt
@@ -78,6 +106,7 @@ system prompt).
 | `sft_train/sft_val.parquet` | 1,958 rows | 1,358 selftrace traces + 600 geminicot traces; GT + evidence-window metadata from selfqa | `rft_selftrace_15k3` (**stage-3 RFT**) + `sft_geminicot_4k8` (**stage-1 cold start**) + `rl_selfqa_1k6` (**stage-2 RL**, metadata only) |
 | `rl_train.parquet` | 1,068 rows (judge era; difficulty filtering still expected to trim) | selfqa questions disjoint from SFT — no answer-length cut since the LLM judge scores R_acc; GT still expanded to frozen alias lists (judge-unavailable fallback + audit) | `rl_selfqa_1k6` (**stage-2 RL train**) |
 | `rl_val.parquet` | 114 rows | used verbatim | `rl_val_114` (**stage-2 RL val**); zero video overlap with selftrace (verified) |
+| `rft_train/rft_val.parquet` | 2,237 + 49 rows | ≤3 answer-distinct traces × 861 questions, score > 1.5, review-filtered (§8) | **our own GRPO rollouts** (`grpo-vanilla`, 267 steps, 2026-08-28..30) — the first file on this table with no LongVT text in the supervised turns; videos still selfqa mp4s |
 
 These first-column files are all **generated locally** by
 `data_prep/render_traces.py` / `data_prep/extract_rl.py`; the table states
@@ -316,3 +345,81 @@ normalization, parenthetical variants like "stone (rock)", number words).
 
 Scoring (reward.py::compute_score_qa): R = 0.5·format + R_acc(judge)
 + 0.5·best-IoU(any crop call, video_segment).
+
+## 8. Stage-3 RFT set — distilled from our own rollouts (2026-08-31)
+
+Built by `data_prep/extract_rft.py` per the README "RFT" recipe. The funnel,
+all numbers measured:
+
+```
+34,048 trajectories (266 step files × 128 rows: batch 8 prompts × K=16;
+                     the final step's dump was never written)
+  score > 1.5            −22,471   (acc must be 1: R = 0.5·format + acc + 0.5·IoU)
+  structural parse           −44   (22 bad think1, 11 bad final, 7 multi-call,
+                                    3 wrong tool, 1 template shape)
+  = candidate pool        11,533   over 861/1,068 RL questions
+  ≤3 per question         −9,213   (exact-dup removal → step desc → answer-
+                                    diverse pick_traces; quartiles 1/152/190/228/267)
+  = picked                 2,320   → all 2,320 re-rendered, zero render drops
+  review filter              −34   (§8.3)
+  = final          2,237 train / 49 val   (val split by video id, seed 0)
+```
+
+### 8.1 Traceback — every trace pinned to its RL row
+
+Question text → `rl_train.parquet` is a unique key (1,068 distinct). Three
+equalities checked per trace, zero failures measured: the join itself, the
+prompt-rendered duration vs the row's `duration` (the same value the tool's
+`create_kwargs` carried at rollout time), and the dump's `gts` vs the row's
+GT. So every RFT row inherits video_path/duration/gt/segment from the exact
+row the trajectory was generated against.
+
+### 8.2 Re-rendering discipline, RFT edition
+
+§0.5's principle applies with one inversion: these traces come from OUR OWN
+policy under the RL-time template, so fidelity now means *verbatim*, not
+*canonicalized*:
+
+1. assistant turn [2] is the policy's own bytes (think + tool_call as
+   generated) — NOT re-canonicalized as render_traces.py does for LongVT's
+   foreign-template traces;
+2. the tool message keeps the logged response text; frames are re-decoded by
+   re-executing the logged call through the RL tool's own code path
+   (_normalize_window → sample_frames → crop_response_text, incl. the
+   min-2s window expansion) and the rebuilt text must be byte-equal to the
+   log or the trace drops. 2,320/2,320 passed — zero train/serve skew,
+   verified per row rather than assumed;
+3. same rft_9397 guard as §0.5: <image>/<video> scrubbed from model text,
+   placeholders == assets asserted per row;
+4. prompts rebuilt from prompts.py with the traceback duration (byte-equal
+   to what the policy saw, §8.1 checks the rendered form).
+
+### 8.3 Review filter — what the hand-read changed (−34)
+
+Full review 2026-08-31 (verdict header in `rft_review.md`): all 2,320
+answer/GT pairs read — the 928 with no word overlap with GT in full — plus
+programmatic checks (timestamps vs duration, window/segment geometry,
+boilerplate frequency, cross-question duplication: none). Three drop
+criteria came out of it, applied to the parquets and recorded in
+`rft_selection.json::review_filter` with the rows in `rft_dropped.jsonl`:
+
+| Criterion | n | Why it must not be baked in |
+|---|---:|---|
+| final think cites a timestamp > duration+2s | 12 | references frames that cannot exist |
+| judge false positive | 2 | "up to 1.5h" accepted vs GT "up to 100 minutes" — the one factual judge error found in 928 judge-only matches |
+| lazy window: segment < 30% of video, crop > 80% | 20 | no localization; slipped past the gate at score 1.5–1.6 (low IoU still > 0). RFT has no KL pullback |
+
+Kept as noise, deliberately: ~10 typo-level glitches ("They areHYUNDAI",
+OCR-mangled surnames) and the inherited think openers ("**Evidence**:" 13.7%,
+"Let me think" 11.5%) — correct content, pre-existing SFT style, not reward
+artifacts. Known gap: the §8.3 criteria live in the recorded filter, not in
+`extract_rft.py` — a re-extraction reproduces §8 up to the review filter and
+must re-apply it (or port it into the script) to land on the same 2,286 rows.
+
+### 8.4 Row shape
+
+Schema identical to §7.3 (same trainer, same loss mask: messages [2] and [4]
+supervised) with these deltas: message [2] is verbatim policy output (§8.2);
+message [3]'s text is the logged tool response; `extra_info.source` =
+"grpo_rollout" and `extra_info` adds {step, score, acc, evidence_iou} from
+the reward breakdown — audit-only, never trained on.

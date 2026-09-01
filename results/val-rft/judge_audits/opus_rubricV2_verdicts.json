@@ -1,0 +1,1028 @@
+[
+ {
+  "q": "What does the person do after laughing and making gestures with the violin and bow?",
+  "gt": "She plays the violin.",
+  "a": "They begin to play the violin.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate says they begin to play the violin, which matches the reference's \"she plays the violin.\" The pronoun difference is not a detail the question asks about.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What pattern of movement does the person use with the violin bow while playing?",
+  "gt": "The person moves the violin bow back and forth across the strings.",
+  "a": "The person moves the bow back and forth across the strings.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate states the bow moves back and forth across the strings, identical to the reference's description of the movement pattern.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the camels with riders approach the structured tents, what do the animals and their riders do next?",
+  "gt": "The camels kneel down to the ground, and their riders dismount.",
+  "a": "They ride the camels away from the tents and continue their journey across the desert.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the camels kneel and riders dismount at the tents; the candidate says they ride away and continue traveling, which contradicts it.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens after the man in the white shirt and brown pants falls backward off the slackline for the third time?",
+  "gt": "Another man in a yellow shirt walks over and helps him up from the ground.",
+  "a": "He gets up and walks away from the slackline.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says a man in a yellow shirt comes over and helps him up from the ground. The candidate says he gets up himself and walks away, which omits the helper and adds an incorrect action — it contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What change in camera perspective occurs after the man in the yellow shirt moves out of the central frame?",
+  "gt": "The camera pulls back to reveal a wider view of people relaxing on a grassy area next to a body of water.",
+  "a": "The camera pulls back to a wider shot, revealing more of the park setting.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both state the camera pulls back to a wider shot revealing more of the surrounding setting; the reference's specific scene details (grass, water, people) are unasked extras.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What item, accompanied by red cords, is placed into the footwell area of the boat by a hand?",
+  "gt": "A pair of white shoes.",
+  "a": "A pair of white and black water skis.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what item is placed into the footwell. The reference says a pair of white shoes; the candidate says a pair of white and black water skis — a different object, and it also adds an incorrect color detail.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What action does the person perform immediately after riding up the wooden ramp?",
+  "gt": "They jump over the ramp on their bike.",
+  "a": "They perform a jump off the ramp.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers identify the same immediately following action: performing a jump using the ramp. The candidate omits the mention of the bike, but that detail isn't required by the question and doesn't contradict the reference.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the right knitting needle is inserted into a stitch on the left needle and the yarn is wrapped around the right needle, what action immediately follows?",
+  "gt": "The right needle pulls the wrapped yarn through the stitch, creating a new loop.",
+  "a": "pulling the yarn through the loop on the left needle to create a new stitch",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate states the yarn is pulled through the stitch on the left needle to form a new stitch, which matches the reference's \"pulls the wrapped yarn through the stitch, creating a new loop.\"\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What does the man in the dark suit do immediately after shaking hands with the referee?",
+  "gt": "He holds a microphone and speaks directly towards the camera.",
+  "a": "He turns to face the camera and begins to speak.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers say the man addresses the camera and speaks. The candidate omits the microphone detail, but the core action asked about — speaking toward the camera — matches the reference.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the yellow lawnmower after the man brings the red hose towards it?",
+  "gt": "Smoke emits from the lawnmower.",
+  "a": "The yellow lawnmower is pushed away from the man.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states smoke comes out of the lawnmower; the candidate says it is pushed away, which is a different and contradictory outcome.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What two distinct tools does the stylist consistently use in conjunction to blow dry and style the client's hair?",
+  "gt": "A red hairdryer and a black round brush.",
+  "a": "A red hairdryer and a round hairbrush.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks which two tools are used: a hairdryer and a round brush. The candidate names both (red hairdryer, round hairbrush); omitting the brush's color is an unasked detail.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the young skateboarder in the white shirt and helmet after he attempts to ride off the raised wooden platform?",
+  "gt": "He loses balance, falls to the ground, and then gets back up.",
+  "a": "He falls off the platform and onto the ground.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what happens after the attempt; the reference's core answer is that he falls. The candidate states he falls off the platform onto the ground, matching. Omitting that he then gets back up is an additional detail beyond the core answer.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What briefly enters the bottom of the frame and then moves out of view?",
+  "gt": "A pair of hands.",
+  "a": "A person's feet.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what enters the bottom of the frame briefly. The reference says a pair of hands; the candidate says a person's feet — a different body part, contradicting the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What hand gesture does the man on the television perform after he brings his hands up from a lowered position?",
+  "gt": "He holds both hands up with open palms.",
+  "a": "He brings both hands together in front of his chest, with fingers pointing towards each other.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "Comparison: The reference describes the man holding both hands up with open palms (a raised, open-palm gesture). The candidate instead describes bringing the hands together in front of the chest with fingers pointing toward each other, which is a different gesture and does not convey the open-palm raised-hands description.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What type of seating furniture becomes visible on the right side of the room as the camera pans?",
+  "gt": "A dark brown armchair.",
+  "a": "A dark-colored armchair.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what type of seating furniture appears; the reference says a dark brown armchair, and the candidate says a dark-colored armchair — same furniture type, with color slightly less specific but still consistent and not contradictory.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What patterned garment is placed on the clothing rack?",
+  "gt": "A black jacket with white flowers is placed on the rack.",
+  "a": "A black and white floral dress.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "The pattern (black with white florals) matches, but the garment type differs: the reference says jacket, the candidate says dress — and the question asks what garment it is.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What three actions does the person perform at the kitchen sink before she starts scrubbing the dishes?",
+  "gt": "She turns on the faucet, picks up a sponge, and applies dish soap to it.",
+  "a": "She places the dishes, runs water, and applies dish soap.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: Reference lists (1) turning on the faucet, (2) picking up a sponge, (3) applying dish soap. The candidate gets \"runs water\" (≈ turns on faucet) and \"applies dish soap,\" but replaces \"picks up a sponge\" with \"places the dishes,\" which is not among the reference's three actions.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What is the initial action performed with the right knitting needle after the blue ribbed swatch is displayed without movement?",
+  "gt": "The right knitting needle is inserted into the first stitch on the left needle.",
+  "a": "The right knitting needle is used to begin the binding-off process by inserting it into the first stitch on the left needle.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both state the same initial action: the right needle is inserted into the first stitch on the left needle. The candidate adds context about binding off, which is extra detail and doesn't conflict.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What festive decoration do a person's hands start to attach across the upper part of the window frame?",
+  "gt": "A golden, shimmering tinsel garland.",
+  "a": "A long, shimmering, gold-colored tinsel garland.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate identifies the same decoration: a gold shimmering tinsel garland, matching the reference exactly (with \"long\" as extra harmless detail).\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the white ATV after the boy completes a jump and continues riding it on the dirt track?",
+  "gt": "The white ATV tips over onto its left side.",
+  "a": "It continues to ride independently on the dirt track, navigating the terrain and passing by various obstacles and parked vehicles.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the ATV tips over onto its left side; the candidate says it keeps riding normally, which contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What change occurs on the wall after the person dips the roller in the paint tray and begins painting?",
+  "gt": "The tan wall is painted white by the roller.",
+  "a": "The wall changes from its original color to a fresh coat of paint.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "Comparison: The reference says the wall goes from tan to painted white by the roller. The candidate says the wall changes from its original color to a fresh coat of paint — i.e., it becomes painted, which captures the same change, just without naming the specific colors (a detail the question didn't explicitly request).\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the child perform while wearing a patterned skirt and a pink top?",
+  "gt": "The child walks up the stairs.",
+  "a": "The child climbs the stairs.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate says the child climbs the stairs, which matches the reference's \"walks up the stairs\" — same action, just different wording.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What do the people do immediately after entering the Saylor Skatepark?",
+  "gt": "They set up a black banner for Gatorade Freeflow registration.",
+  "a": "They are already performing BMX tricks and stunts in the indoor skatepark.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the people set up a black banner for Gatorade Freeflow registration immediately after entering. The candidate instead says they're performing BMX tricks and stunts, which does not match and contradicts the referenced action.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens to the leaf pile after the girl in the pink shirt emerges from it?",
+  "gt": "A person in a dark hooded jacket then jumps into the leaf pile.",
+  "a": "The leaf pile is disturbed and slightly reduced in size.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what happens to the leaf pile afterward; the reference answers that another person in a dark hooded jacket jumps into it. The candidate only vaguely says the pile is \"disturbed and slightly reduced,\" missing the key event (someone jumping in) and effectively describing the scene rather than answering.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What is the man in the white t-shirt doing after looking slightly upwards?",
+  "gt": "He looks down.",
+  "a": "He is performing a series of complex acrobatic moves, including a handstand and a flip.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "Reference: after looking slightly upwards, the man looks down. Candidate: claims he performs complex acrobatics (handstand, flip) — entirely different and contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What object is the person standing near the sliding curler holding?",
+  "gt": "A curling broom.",
+  "a": "A curling broom.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers state the person is holding a curling broom — identical.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What item is visible on the runner's back after they turn away from the camera and continue running down the road?",
+  "gt": "A belt with several green water bottles.",
+  "a": "A race bib with the number 40.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference identifies the item on the runner's back as a hydration belt holding several green water bottles. The candidate instead names a race bib with number 40, which is a different item entirely and contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What object does the man wipe with a cloth after he finishes cleaning the piano?",
+  "gt": "He wipes the wooden frame of a double door.",
+  "a": "A large wooden door.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what object is wiped. The reference says the wooden frame of a double door; the candidate says a large wooden door — the same object identified (wooden door), with only unasked detail (frame/double) omitted.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What is the immediate consequence after the wakeboarder maneuvers over the first white ramp visible in the water?",
+  "gt": "The wakeboarder falls into the water and gets submerged.",
+  "a": "The wakeboarder falls into the water.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what happens right after the ramp. The reference says the wakeboarder falls into the water and gets submerged; the candidate says the wakeboarder falls into the water — the same core event, with only the added \"submerged\" detail omitted, which isn't explicitly asked for.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What does the wakeboarder do after ascending the white ramp and becoming airborne?",
+  "gt": "The wakeboarder descends, lands back on the water, and continues to ride away.",
+  "a": "He performs a backflip and other aerial tricks.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states that after going airborne the rider comes down, lands on the water, and rides away. The candidate instead claims he performs a backflip and other aerial tricks, which is not what the reference describes and omits the landing/riding away entirely.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "After pouring the contents of a jar into the pan, what action does the person immediately perform with the food?",
+  "gt": "They stir the food in the pan with a wooden spoon.",
+  "a": "They stir the food in the pan with a wooden spoon.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers state the person stirs the food in the pan with a wooden spoon — identical content.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the green grater is placed on the counter, what yellow food item is repeatedly sliced with a knife?",
+  "gt": "A block of yellow cheese.",
+  "a": "A block of yellow cheese.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Candidate matches the reference exactly: a block of yellow cheese.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What is done to the round food item in the left pan using two utensils?",
+  "gt": "It is flipped over.",
+  "a": "The person presses and shapes the round food item in the left pan using two utensils.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the food item is flipped over with the two utensils. The candidate instead says it is pressed and shaped, which is a different action and does not convey flipping.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What action is performed to change the cooking side of the circular food item in the black pan?",
+  "gt": "The food item is flipped over.",
+  "a": "The person uses a utensil to flip the food over.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what action changes the cooking side. Reference: the item is flipped. Candidate: the person flips it over (with a utensil) — same action, with extra unasked detail about the tool.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the competitor wearing blue gloves after the competitor in the white helmet delivers a high kick?",
+  "gt": "The competitor wearing blue gloves falls to the ground.",
+  "a": "The competitor wearing blue gloves is thrown to the mat and falls down.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what happens to the blue-gloved competitor. Reference: falls to the ground. Candidate: falls down to the mat — the core outcome matches; \"thrown\" is an added descriptive flourish that doesn't contradict the fall.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What unfurls on the pole towards the back of the boat?",
+  "gt": "A flag unfurls.",
+  "a": "A flag.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what unfurls on the pole at the boat's stern; the reference says a flag, and the candidate says a flag. Identical content, only briefer.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "How does the camera's framing of the boat and ocean change after the initial low-angle view?",
+  "gt": "The camera shifts to a wider perspective, showing more of the boat's bow, hull, and the entire sail as it moves through the waves.",
+  "a": "The camera moves from a close, low-angle view of the boat's mast and sails to a wider, eye-level perspective that reveals more of the boat's deck and the surrounding ocean.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers state the framing widens from the initial low-angle shot to show more of the boat and its surroundings. The candidate adds \"eye-level\" and mentions the deck rather than bow/hull/sail, but the core answer (a wider view revealing more of the boat and ocean) matches the reference; those are unasked details.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What two types of hair are being blow-dried concurrently after the woman begins styling the blonde hair?",
+  "gt": "Blonde hair and dark brown hair.",
+  "a": "Blonde and dark brown hair",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate names both hair types—blonde and dark brown—exactly as the reference does.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What object does the child use to stand taller at the kitchen sink?",
+  "gt": "The child uses a white step stool.",
+  "a": "A small white footstool.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what object the child stands on to reach the sink. The reference says a white step stool; the candidate says a small white footstool — the same object and color, with \"small\" as harmless extra detail.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After completing the initial pencil outlines on the canvas, what action does the artist perform to start applying color?",
+  "gt": "The artist picks up a paintbrush and starts applying a dark green base coat to the sketched tree areas.",
+  "a": "He dips his brush into a palette and applies a dark green wash to the tree forms.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both say the artist takes up a brush and applies dark green paint to the sketched tree areas. The candidate's added detail about dipping into a palette and calling it a \"wash\" rather than \"base coat\" doesn't conflict with the reference.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "How does the person prepare the white sneakers with yellowed soles before placing them on the outdoor chairs?",
+  "gt": "They apply a cleaning solution to the soles with a toothbrush and then wrap each shoe in plastic cling wrap.",
+  "a": "The person applies Angelus Sole Breeze to the soles and covers the shoes with plastic wrap.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate captures both key preparation steps: applying a solution to the soles (naming the product) and wrapping the shoes in plastic. Omitting the toothbrush applicator is a minor unasked detail; no contradiction.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What type of scores are displayed immediately after all judges' Technical Merit scores are shown?",
+  "gt": "Artistic Expression scores.",
+  "a": "Artistic Expression scores",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Candidate states \"Artistic Expression scores,\" matching the reference exactly.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the skier wearing a blue jacket and light blue pants as they move down the snowy trail?",
+  "gt": "The skier loses balance and falls onto the snowy trail.",
+  "a": "The skier in the blue jacket and light blue pants is seen moving down the snowy trail, using ski poles for propulsion and balance, and interacting with other skiers along the way.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference's answer to \"what happens\" is that the skier loses balance and falls. The candidate instead describes generic skiing (using poles, interacting with others) and never mentions the fall, effectively contradicting/missing the key event asked about.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens to the child as they push the red lawnmower across the grass?",
+  "gt": "The child falls to their knees while pushing the lawnmower, then stands up and continues to push it.",
+  "a": "The child pushes the red lawnmower across the grass, moving it back and forth with effort, while the camera follows their movements.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what happens to the child during the pushing. The reference's key event is that the child falls to their knees and then gets up and continues. The candidate only describes generic pushing back and forth, omitting the fall and recovery entirely — it describes the scene without answering the specific event.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What does the person with chest tattoos use to clean the nose after putting on both blue gloves?",
+  "gt": "They use a white cotton-tipped stick, similar to a swab, to clean the area around the nose.",
+  "a": "A cotton swab.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what tool is used to clean the nose. The reference says a white cotton-tipped stick, like a swab; the candidate says a cotton swab — the same item, with omitted color/description details that weren't asked about.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the person perform with the black helmet after it is seen in their hands?",
+  "gt": "The person places the black helmet onto the seat of the red scooter.",
+  "a": "They put it on their head.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states the helmet is placed on the red scooter's seat, while the candidate says it's worn on the head — a direct contradiction of the asked action.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "After sectioning off the top layer of hair with a clip, what two actions does the person perform before blow-drying the bottom layer?",
+  "gt": "They spray heat protector on their hair and then grab a hairdryer and a round patterned brush.",
+  "a": "They apply a heat protector and grab a hairdryer and a round-barreled brush.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both name the same two actions: applying heat protector and grabbing a hairdryer plus a round brush. The slight difference in brush description (\"round-barreled\" vs \"round patterned\") is an unasked detail and doesn't contradict the core answer.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens immediately after the player in green, wearing number 7, kicks the ball from a set piece towards the goal?",
+  "gt": "The ball enters the goal, and the green team players celebrate by hugging each other.",
+  "a": "The player in green number 7 scores a goal and celebrates by raising his arms and running towards the sideline.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: Both agree the ball goes into the goal (a goal is scored) and that celebration follows. However, the reference specifies the green players celebrate by hugging each other, while the candidate asserts the scorer raises his arms and runs toward the sideline — a contradicting detail about the follow-up action, which is part of what the question asks (\"what happens immediately after\").\n\nCore event (goal) correct; celebration detail conflicts.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What happens to the person after they are seen waterskiing across the water?",
+  "gt": "They fall into the water, causing a large splash.",
+  "a": "They fall into the water and struggle to stay afloat before being pulled back to the boat.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what happens after the waterskiing. Reference: the person falls into the water. Candidate: they fall into the water (plus added details about struggling and being pulled back to the boat). The core answer — falling into the water — matches; the extra embellishment doesn't contradict the reference's key fact.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What instrument does the man in the orange shirt with a long beard begin to play on stage after other musicians have joined him?",
+  "gt": "The man in the orange shirt with a long beard begins to play the saxophone.",
+  "a": "A saxophone.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate says \"A saxophone,\" matching the reference's answer of saxophone. Brevity doesn't matter.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What footwear does the second person, wearing a purple top and skirt, put on after approaching the orange cones?",
+  "gt": "They put on a pair of rollerblades.",
+  "a": "Rollerblades",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what footwear is put on; reference says rollerblades, candidate says rollerblades. Exact match.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens after the raft goes over the biggest drop in the river?",
+  "gt": "The camera is submerged underwater, showing blurry orange and brown, before resurfacing.",
+  "a": "The raft continues to move downstream through calmer sections of the river.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the key event is the camera going underwater (blurry orange/brown) before resurfacing. The candidate instead claims the raft simply continues through calmer water, which does not match and misses the submersion entirely.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "After sitting on the floor with several hoops, what body part does the performer use to spin the hoops?",
+  "gt": "Her leg.",
+  "a": "Her hands.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks which body part spins the hoops. Reference: her leg. Candidate: her hands — a different body part, contradicting the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What does the person do with the red strap-like object retrieved from the small white table?",
+  "gt": "The person attaches the red strap-like object to the small white dog.",
+  "a": "They use it to leash the dog.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference says the person attaches the red strap to the small white dog; the candidate says they use it to leash the dog — the same action (attaching a leash/strap to the dog). Omitting the dog's description doesn't matter.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After stopping on the sidewalk, what does the person remove and then re-attach from the dog's head?",
+  "gt": "They remove a small blue clip and then re-attach it to the dog's fur.",
+  "a": "A red face mask.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference identifies the removed-and-re-attached item as a small blue clip; the candidate says a red face mask, which is a different object entirely (wrong item and wrong color).\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens after the official raises the starter pistol?",
+  "gt": "The runners begin the race.",
+  "a": "The runners begin to move forward, indicating the start of the race.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate states the runners begin moving forward, marking the race's start — the same as the reference's \"runners begin the race.\"\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What food is the man primarily eating with his fork while seated at the table?",
+  "gt": "He is eating scrambled eggs.",
+  "a": "Scrambled eggs and meat.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "The reference identifies scrambled eggs as the food; the candidate says scrambled eggs (plus meat as additional detail). The core answer matches.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After a person lowers the brindle puppy into the water-filled bathtub, what immediate actions does the puppy take?",
+  "gt": "The puppy moves its legs and body, appearing to swim, while the person continues to hold and support it.",
+  "a": "It attempts to stand and walk in the shallow water, with its paws splashing.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "Comparison: The reference says the puppy paddles/moves its legs as if swimming while still being held and supported by the person. The candidate instead says the puppy tries to stand and walk in shallow water, splashing — which contradicts the \"held/supported, swimming motion\" description and misstates the action.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What is the first item a person removes from the kitchen sink?",
+  "gt": "A white mug.",
+  "a": "A large, dark-colored pot.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states the first item removed is a white mug; the candidate says a large, dark-colored pot, which is a different object entirely.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What does the woman in the light blue shirt hand to the sumo wrestler she was riding on?",
+  "gt": "She hands him green sheets of paper.",
+  "a": "A microphone.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states she hands him green sheets of paper; the candidate says a microphone, which is a different object entirely.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What image briefly appears and disappears over the man wearing a Needham Fire shirt and NFD cap?",
+  "gt": "A photo of a baby named Brenya Elizabeth Sullivan with her birth and death dates listed.",
+  "a": "A photo of a baby.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what image appears; the candidate correctly identifies it as a photo of a baby. The name and dates are additional detail not explicitly requested by the question.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the right hand lifts its fingers, what action does it perform next on the drum head?",
+  "gt": "It brings its fingertips down to strike the drum head.",
+  "a": "It strikes the drum head with the palm.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.5,
+  "auditor_text": "Both agree the next action is striking the drum head, but the reference specifies the strike is made with the fingertips (consistent with the fingers being lifted), while the candidate says the palm — a contradicting manner detail on the same action.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "After the man in the orange and black scarf looks down towards his side, what object does he bring to his mouth?",
+  "gt": "He brings a black and green can to his mouth.",
+  "a": "A metallic can.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "The question asks only what object he brings to his mouth. Both answers identify a can; the reference's color description (\"black and green\") is unasked detail, and \"metallic\" is a minor descriptor that doesn't change the identified object.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the right knitting needle perform after 'Step 2' appears and before 'Step 3' appears?",
+  "gt": "The right knitting needle pulls the yarn through a stitch, forming a new loop.",
+  "a": "It inserts the needle into the front loop of a stitch, yarns over, and pulls through to create a new stitch.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference identifies the action as the right needle pulling the yarn through a stitch to form a new loop. The candidate states the needle is inserted, yarn over, and pulled through to create a new stitch — the core action (pulling yarn through to form a new stitch/loop) matches, with extra procedural context that doesn't contradict the reference.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the right knitting needle pulls a new orange yarn loop through an existing stitch, what happens to the original stitch on the left needle?",
+  "gt": "It is slid off the left needle.",
+  "a": "It is slipped off the left needle and onto the right needle.",
+  "recorded_acc": 1.0,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "Reference: the original stitch is slid off the left needle. Candidate: slipped off the left needle (adding that it goes onto the right needle). The core answer — being removed from the left needle — matches; the added destination detail wasn't asked about and reflects common knitting description.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What red and yellow object is being cleaned with water after the person exits the garage?",
+  "gt": "A red and yellow toy pedal car is being cleaned.",
+  "a": "A red and yellow toy car.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what red and yellow object is being cleaned. The reference says a red and yellow toy pedal car; the candidate says a red and yellow toy car. \"Pedal\" is an extra descriptive detail not required by the question, so the core answer matches.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens immediately after the practitioner wearing the red chest protector performs a high kick towards their opponent?",
+  "gt": "The opponent, wearing a blue chest protector, falls to the ground.",
+  "a": "The opponent attempts to block or counter the kick, and the practitioner in the red chest protector maintains their offensive stance.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states the opponent (blue) falls to the ground after the kick. The candidate says the opponent blocks or counters and the red practitioner maintains stance — this contradicts the reference and does not mention the fall.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What action does the person on rollerblades perform when approaching the stairs?",
+  "gt": "The person jumps up the stairs while on rollerblades.",
+  "a": "They ascend the stairs using their rollerblades.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: The reference specifies the person *jumps* up the stairs on rollerblades. The candidate only says they ascend/go up the stairs on rollerblades, capturing the direction but omitting the key action asked about (jumping), and \"ascend using their rollerblades\" suggests skating up rather than jumping.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "How many musicians are playing the series of dark, barrel-shaped drums arranged in a row?",
+  "gt": "Three musicians are playing the drums.",
+  "a": "Four musicians",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks for a count. The reference says three musicians; the candidate says four, which contradicts it.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What trick does the person in the blue shirt perform on the slackline?",
+  "gt": "They perform a split.",
+  "a": "He performs a handstand on the slackline and a full split while maintaining balance.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "The reference identifies the trick as a split. The candidate does mention a full split, but also asserts a handstand, adding a trick not supported by the reference — effectively giving two answers, one of which is wrong.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What is displayed on the screen that appears after the white ball enters the goal net?",
+  "gt": "A match facts screen with an instant replay option is shown.",
+  "a": "A detailed match summary with team names, scores, and player statistics.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "The reference describes a \"match facts\" screen that includes an instant replay option. The candidate captures the general idea of a match summary/stats screen (roughly matching \"match facts\"), but omits the instant replay option and adds unverified specifics (player statistics). It partially overlaps with the reference's answer.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What does the person in the yellow shirt do after the motorcycle rider stops near the checkered flags?",
+  "gt": "The person in yellow speaks with the rider, interacts with the motorcycle, and then helps the rider dismount and places the bike on a stand.",
+  "a": "He adjusts the motorcycle.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: The reference describes a sequence — talking with the rider, interacting with/adjusting the motorcycle, then helping the rider off and putting the bike on a stand. The candidate only mentions adjusting the motorcycle, capturing one element of the multi-part action while omitting the conversation and helping the rider dismount/stand the bike.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What happens to Josh Harrington after he performs a trick on the red rail next to the stairs?",
+  "gt": "He falls off his bike and lands on his back on the ground.",
+  "a": "He falls off his bike.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate states he falls off his bike, matching the reference's core answer; the detail about landing on his back is additional scene detail not required by the question.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the baby presses several keys on the left side of the keyboard, what does an adult hand do on the right side of the instrument?",
+  "gt": "An adult hand appears and presses multiple buttons on the keyboard's control panel.",
+  "a": "It presses keys on the right side of the instrument.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 0.5,
+  "auditor_text": "Reference: the adult hand presses multiple buttons on the keyboard's **control panel**. Candidate: presses **keys** on the right side. The candidate captures the pressing action but misidentifies what is pressed (keys rather than control-panel buttons), which is the substance of the question.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What action do the players perform immediately after several colored dodgeballs are lined up on the court?",
+  "gt": "They run from opposing sides to gather the dodgeballs in the center.",
+  "a": "They run towards the balls and pick them up.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers say the players run toward/to the balls and collect them; the candidate omits only the unasked details of \"opposing sides\" and \"center,\" which doesn't change the core action described.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After moving away from the store display featuring clothing and accessories, what type of store aisle does the person first walk through, followed by what fresh food section?",
+  "gt": "The person first walks through an aisle with packaged snacks, then a section displaying fruits and vegetables.",
+  "a": "They walk through a general merchandise aisle, then enter a fresh food section with refrigerated displays and various food items.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "Reference: first a packaged-snacks aisle, then a fruits-and-vegetables (produce) section.\nCandidate: a vague \"general merchandise aisle\" (not snacks) and a \"fresh food section with refrigerated displays\" (not identified as produce, and the refrigerated detail conflicts). Neither requested specific is correctly given.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What emerges from the water after only a fin is visible?",
+  "gt": "A large, disc-shaped fish.",
+  "a": "A large, unusual fish, resembling a sunfish, emerges from the water.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both identify a large fish emerging; the candidate's \"resembling a sunfish\" is consistent with the reference's \"disc-shaped fish,\" and it names the same entity without hedging between different answers.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After a group of children gather at the pool's starting blocks, what main action do they perform next?",
+  "gt": "They position themselves on the blocks and then dive into the water.",
+  "a": "They jump into the pool.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Comparison: The reference's key action is entering the water (diving in) after taking position on the blocks. The candidate says they jump into the pool, which conveys the same main action of entering the water; \"jump\" vs \"dive\" is a minor wording difference, and the omitted positioning detail is contextual.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What item does the girl sitting on the edge of the pool put on her face?",
+  "gt": "She puts on her swimming goggles.",
+  "a": "A blue swim cap.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what item is put on the face; the reference says swimming goggles, while the candidate says a blue swim cap — a different item (and not on the face).\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What specific tag team finisher is demonstrated for the wrestler Batista in the ring?",
+  "gt": "Batista Bomb & RKO.",
+  "a": "The Batista Bomb & RKO.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both name the same tag team finisher combination: the Batista Bomb followed by the RKO. Only difference is the article \"The,\" which doesn't matter.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What type of vehicle approaches the large breaking wave after a surfer rides it?",
+  "gt": "A red jet ski approaches the breaking wave.",
+  "a": "A jet ski.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what type of vehicle approaches the wave. The reference says \"a red jet ski\" — the vehicle type is a jet ski, with color as extra unasked detail. The candidate says \"a jet ski,\" correctly identifying the vehicle type.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What does the person do after adjusting the black fanny pack while wearing a white top and jeans?",
+  "gt": "The person uses a phone to take a mirror selfie.",
+  "a": "They take selfies in the mirror and then move towards the clothing rack.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference answer is that the person takes a mirror selfie with a phone. The candidate states they take selfies in the mirror, which matches; the additional mention of moving toward the clothing rack is extra context, not a contradiction or hedge between alternatives.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What colors are the top and pole used by the athlete who performs the first successful pole vault?",
+  "gt": "The athlete wears a white top and uses a white or light grey pole.",
+  "a": "The pole is yellow and the top is white.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: The question asks for two attributes. The candidate correctly identifies the top as white, matching the reference. However, it states the pole is yellow, whereas the reference says the pole is white or light grey — a contradiction on an explicitly asked detail.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "After applying toothpaste to his green toothbrush, what does the boy begin to do?",
+  "gt": "He puts the toothbrush in his mouth and starts brushing his teeth.",
+  "a": "He begins to brush his teeth.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what the boy begins to do after applying toothpaste. The reference says he puts the brush in his mouth and starts brushing his teeth; the candidate says he begins to brush his teeth. The core answer matches; the omitted detail (putting the brush in his mouth) is just added context.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What does the boy in the white shirt do with the tube of toothpaste after picking up his toothbrush?",
+  "gt": "He squeezes toothpaste onto his toothbrush.",
+  "a": "He squeezes toothpaste onto his toothbrush.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate's answer is identical to the reference: squeezing toothpaste onto his toothbrush.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After lifting the kite control bar and lines high above their head, what action does the person perform to get the kite into the air?",
+  "gt": "They run forward across the grassy field until the kite becomes airborne.",
+  "a": "They run forward while holding the bar and lines high.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both answers state the person runs forward (while holding the bar/lines up) to launch the kite. The reference's extra details (grassy field, until airborne) are unasked context, so omitting them doesn't matter.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the player in the red shirt perform immediately after the player in the blue shirt serves the ball?",
+  "gt": "The player in the red shirt returns the serve by hitting the ball with their paddle.",
+  "a": "The player in the red shirt returns the ball with a stroke.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what the red-shirted player does right after the serve. The reference says they return the serve by hitting the ball with their paddle. The candidate says they return the ball with a stroke — the same action, just omitting the unasked detail about the paddle.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the person take immediately after experiencing a cut on their finger while working on the drawer?",
+  "gt": "They wipe the cut on their finger with a white cloth.",
+  "a": "She bites her finger to stop the bleeding.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states the person wipes the cut with a white cloth; the candidate says she bites her finger, a different and contradictory action.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What color swimsuit is the person wearing while riding the large wave on the surfboard?",
+  "gt": "The person is wearing a red swimsuit.",
+  "a": "Orange",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks specifically for the swimsuit color. The reference states red; the candidate says orange, a different color that contradicts the reference answer to the asked question.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What repeatedly happens to the player wearing a black jersey with white shoulder markings while attempting to play hockey?",
+  "gt": "He falls down on the ice multiple times.",
+  "a": "He repeatedly falls or is knocked down by the other player.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference states the player repeatedly falls on the ice; the candidate says he repeatedly falls (or is knocked down), which conveys the same core answer. The added alternative is a minor elaboration on the same event rather than a competing answer.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What two eating utensils are primarily used to consume the food from the large black bowl?",
+  "gt": "Chopsticks and a red spoon are used.",
+  "a": "Chopsticks and a red plastic spoon.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both name chopsticks and a red spoon; the added \"plastic\" is harmless extra detail.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "Identify the colors of the doll-shaped shakers used to season the salad, in the order they appear.",
+  "gt": "A pink shaker is used first, followed by a yellow shaker.",
+  "a": "Black and orange",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks for the colors of the doll-shaped shakers in order. The reference says pink first, then yellow. The candidate says black and orange, which matches neither color nor order.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "Who helps the child wearing a white shirt and bib to rake leaves into the blue pool?",
+  "gt": "The adult in the white hoodie helps the child.",
+  "a": "An adult in a white shirt and blue jeans.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both identify the helper as an adult dressed in white; the candidate says \"white shirt\" rather than \"white hoodie,\" a minor garment-description difference that wasn't the explicit focus of the question. The entity answered is the same adult.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What is worn on the hands of the man and woman after they demonstrate the basic rock, paper, scissors gestures with bare hands?",
+  "gt": "They wear fingerless gloves, one black and one purple.",
+  "a": "They are wearing fingerless gloves.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The question asks what is worn on their hands; the reference says fingerless gloves (with color details as extra scene context). The candidate says fingerless gloves, matching the asked-for item; the colors were not explicitly requested.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What kind of aerial maneuver does the person perform immediately after jumping off the trampoline?",
+  "gt": "The person performs a front flip.",
+  "a": "A complex flip in mid-air.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.5,
+  "auditor_text": "The reference specifies a front flip. The candidate correctly identifies a flip but omits the direction/type (\"front\"), which is precisely what \"what kind\" asks for; \"complex flip\" is vaguer and not a match for the specific maneuver named.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What change in visual content is observable across the entire clip?",
+  "gt": "No change in visual content is observable, as all frames uniformly display a black screen.",
+  "a": "The video transitions from vibrant, active performance to a static, black void.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states there is no change at all — every frame is black. The candidate claims a transition from a vibrant, active performance to blackness, which contradicts the reference's assertion of uniform black frames throughout.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What does the person do on the window immediately after finishing cleaning an indoor section and stepping out onto the patio?",
+  "gt": "He cleans the lower section of the window from the exterior.",
+  "a": "They begin cleaning the window from the outside with a squeegee.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "Both say the person cleans the window from the outside. The reference adds \"lower section,\" a detail not explicitly requested by the question; the candidate's core answer (exterior cleaning) matches.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What happens to the arm of the man in the black shirt after it is nearly pinned down by his opponent during their arm wrestling match?",
+  "gt": "He manages to push his opponent's arm down, winning the match.",
+  "a": "The arm snaps and breaks.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says he recovers and pushes his opponent's arm down to win; the candidate claims his arm snaps and breaks, which contradicts this.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens to the runner wearing bib 258 as she is running on the muddy ground?",
+  "gt": "She stumbles and falls to the ground, then multiple people come to help her stand up.",
+  "a": "She loses her footing and slides on the muddy ground.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 1.0,
+  "auditor_text": "Comparison: The reference says she stumbles/falls on the mud and is then helped up. The candidate says she loses her footing and slides on the muddy ground — this matches the core event (she slips and falls). The helping-up detail is additional context beyond the core answer, and its omission doesn't contradict the reference.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "After the man in the white shirt kicks the yellow ball high into the air, what happens to it?",
+  "gt": "Another man in the outfield catches the ball.",
+  "a": "It flies up into the air and lands on the ground.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference says the ball is caught by another man in the outfield, meaning it never lands. The candidate says it lands on the ground, which contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What is visible inside the framed picture that a woman holds up while being interviewed?",
+  "gt": "The interior of a van with bright yellow, vertically partitioned compartments, likely for transporting dogs.",
+  "a": "It shows the interior of a white van with yellow cargo.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 0.5,
+  "auditor_text": "The core answer — the interior of a van — matches, and the yellow color is noted. However, the reference specifies yellow vertically partitioned compartments (for dogs), while the candidate mischaracterizes it as \"yellow cargo,\" missing the key nature of what's inside.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "What activity is the Boston Terrier performing after the small, light brown dog runs through the grass?",
+  "gt": "It is lying in the grass, panting.",
+  "a": "It is lying down on the grass, panting with its tongue out.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate says the dog is lying down on the grass and panting, which matches the reference (\"lying in the grass, panting\"). The added detail about the tongue is consistent extra context.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What tool does the person use to spread the white cleaning powder after it's sprinkled in the sink?",
+  "gt": "A green scrubbing sponge.",
+  "a": "A green sponge.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The candidate identifies the same tool (a green sponge); omitting the \"scrubbing\" descriptor doesn't change the answer to the asked question.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What action does the scuba diver perform after reaching the submerged vehicle?",
+  "gt": "The diver enters the vehicle and sits behind the steering wheel.",
+  "a": "They examine the interior of the vehicle, including the steering wheel and dashboard.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.5,
+  "auditor_text": "Comparison: The reference says the diver enters the vehicle and sits behind the steering wheel. The candidate conveys being inside/at the interior (mentioning the steering wheel), which partially overlaps, but describes the action as \"examining\" rather than entering and sitting behind the wheel — the key action is not captured.\n\nVERDICT: PARTIAL"
+ },
+ {
+  "q": "After the diver moves further inside from the large rectangular opening, what animal swims into view through it?",
+  "gt": "A yellowish-orange fish swims into view.",
+  "a": "A shark.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference identifies a yellowish-orange fish; the candidate says a shark, which contradicts it.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What happens to the red, green, and blue kite after the man in the striped shirt first attempts to launch it?",
+  "gt": "It initially falls to the ground, but he then successfully relaunches it into the sky.",
+  "a": "The kite successfully takes flight and soars high into the sky.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.5,
+  "auditor": 0.0,
+  "auditor_text": "The question focuses on what happens right after the first launch attempt. The reference says the kite first falls to the ground, and only afterward is successfully relaunched. The candidate omits the failure entirely and states the kite flew successfully on that attempt, contradicting the key point.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "After the person brings the cup towards their mouth and tilts it for a drink, what is visible inside the cup when it is lowered again?",
+  "gt": "Only a small amount of dark residue or grounds is visible at the bottom of the cup.",
+  "a": "A light brown liquid, likely coffee or tea, with some foam or bubbles visible at the top.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states the cup is essentially empty except for a small amount of dark residue/grounds at the bottom. The candidate claims the cup contains light brown liquid with foam, which contradicts the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What item does a hand interact with after being visible near red coffee containers?",
+  "gt": "A blue Pasta Roni cup.",
+  "a": "A coffee container.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks which item the hand interacts with afterward. The reference says a blue Pasta Roni cup; the candidate says a coffee container, which is a different item (and contradicts the \"after being near red coffee containers\" framing).\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What is placed on the mannequin that was previously wearing a black hooded garment, after the hooded person inspects it?",
+  "gt": "A red and black plaid shirt is placed on the mannequin.",
+  "a": "A dark blue scarf.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference identifies a red and black plaid shirt being placed on the mannequin; the candidate says a dark blue scarf, a different item entirely.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What is done with the red long-sleeved top and blue jeans after they are laid out together on the bed?",
+  "gt": "They are photographed with a cell phone.",
+  "a": "The red long-sleeved top and blue jeans are laid out together on the bed and then photographed.",
+  "recorded_acc": 1.0,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference says the outfit is photographed (with a cell phone); the candidate says it's photographed. The core action matches; omitting the device detail isn't required by the question.\n\nVERDICT: FULL"
+ },
+ {
+  "q": "What does the camera capture after it exits the store where a 'CLOSE' sign is prominently displayed on the glass door?",
+  "gt": "The camera captures entering another store where an 'OPEN' sign is visible through the glass door.",
+  "a": "The camera captures the exterior of the building and the surrounding area, including the covered walkway and other buildings.",
+  "recorded_acc": 0.5,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The reference states that after exiting, the camera enters another store where an 'OPEN' sign is visible through the glass door. The candidate only describes exterior surroundings (walkway, buildings) and never mentions entering another store or the 'OPEN' sign — it describes the scene rather than giving the reference's answer.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What type of handheld device is used to groom the red couch?",
+  "gt": "A fabric shaver.",
+  "a": "A handheld vacuum cleaner.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks which handheld device grooms the couch. The reference specifies a fabric shaver (lint/pill remover), while the candidate names a handheld vacuum cleaner — a different device, contradicting the reference.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What action is performed on the window located next to the counter displaying cleaning sprays and a coffee maker?",
+  "gt": "A hand uses a white cloth to wipe the window.",
+  "a": "The window is opened and then closed.",
+  "recorded_acc": 0.0,
+  "live_v2": 0.0,
+  "auditor": 0.0,
+  "auditor_text": "The question asks what action is performed on the window. The reference says a hand wipes it with a white cloth (cleaning). The candidate says the window is opened and then closed, which is a different, contradictory action.\n\nVERDICT: INCORRECT"
+ },
+ {
+  "q": "What small, light-colored, roundish items are released onto the dark floor by the person in the foreground?",
+  "gt": "Numerous small, white and yellow, roundish items are scattered on the floor.",
+  "a": "Small, light-colored, roundish items, likely coins, are released onto the dark floor.",
+  "recorded_acc": 0.5,
+  "live_v2": 1.0,
+  "auditor": 1.0,
+  "auditor_text": "The reference identifies the items only by their appearance (small, white/yellow, roundish, scattered on floor); the candidate says the same, adding a speculative \"likely coins.\" The core answer — small, light-colored, roundish items scattered on the dark floor — matches, and the extra guess doesn't contradict the reference or change the asked-for answer.\n\nVERDICT: FULL"
+ }
+]

@@ -143,7 +143,9 @@ mkdir -p "${RESULT_DIR}"
 # the old, so a save needs 2x that free. Warn rather than exit: resuming with a
 # tight disk is a legitimate thing to do, as long as you know it.
 _free_gb=$(df -BG --output=avail / | tail -1 | tr -d 'G ')
-_ckpts=$(ls -d "${RESULT_DIR}"/ckpt/global_step_* 2>/dev/null | wc -l)
+# `|| true`: under pipefail an empty glob makes ls fail the whole pipeline,
+# and set -e then kills the script -- exactly what bit a fresh RESULT_DIR.
+_ckpts=$(ls -d "${RESULT_DIR}"/ckpt/global_step_* 2>/dev/null | wc -l || true)
 if [ "${_free_gb}" -lt 40 ]; then
     echo "[warn] / has ${_free_gb}G free; a save needs ~34G (new + old side by side)." >&2
     [ "${_ckpts}" -gt 1 ] && echo "[warn] ${_ckpts} checkpoints under ${RESULT_DIR}/ckpt -- retention is not pruning them. Delete all but the one named in latest_checkpointed_iteration.txt." >&2

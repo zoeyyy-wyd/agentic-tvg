@@ -1,0 +1,4 @@
+claude-sonnet-5 WITH reasoning, n=114
+  vs opus-with-reasoning: agree 96/114 (84%)
+  vs haiku-one-word(training judge): agree 97/114 (85%)
+  mean acc: 0.4649

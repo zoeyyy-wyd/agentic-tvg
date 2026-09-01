@@ -1,0 +1,4 @@
+claude-haiku-4-5-20251001 WITH reasoning, n=114
+  vs opus-with-reasoning: agree 86/114 (75%)
+  vs haiku-one-word(training judge): agree 99/114 (87%)
+  mean acc: 0.4737
