@@ -2,9 +2,9 @@
 
 Generalizes judge_audit.py (which hardcoded the 260->267 flip set): re-grades
 EVERY row of the given rollout jsonl(s) with a chosen auditor model, using the
-LIVE rubric imported from agentic_tvg.judge (so the audit can never drift from
-the instrument it audits; --rubric v1 keeps the frozen pre-2026-09-01 prompt
-for historical comparison).
+LIVE v2 rubric imported from agentic_tvg.judge_v2 (so the audit can never
+drift from the instrument it audits; --rubric v1 keeps the frozen
+pre-2026-09-01 prompt for historical comparison).
 
 Three comparisons per run:
   - vs the live v2 verdicts (looked up in judge_cache_v2.jsonl by the same
@@ -33,8 +33,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import anthropic  # noqa: E402
 
 # _load_dotenv runs at import; _key/_PROMPT keep this audit byte-aligned with
-# the live instrument.
-from agentic_tvg.judge import _CACHE_PATH, _key, _PROMPT as PROMPT_V2  # noqa: E402
+# the v2 instrument. Import from judge_v2, NOT judge: since the 2026-09-01
+# split, judge.py is the restored v1 (haiku, one-word) instrument and importing
+# _PROMPT from it would silently audit v1 while labelling the result v2.
+from agentic_tvg.judge_v2 import _CACHE_PATH, _key, _PROMPT as PROMPT_V2  # noqa: E402
 from agentic_tvg.answer_match import parse_answer_qa  # noqa: E402
 
 # The pre-2026-09-01 one-word rubric, frozen verbatim for A/B history.

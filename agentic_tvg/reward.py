@@ -113,9 +113,19 @@ def compute_score_penalty(
 # QA reward (README "Reward"): R = 0.5*format + judge R_acc + TIME_WEIGHT*IoU(crop, evidence)
 # --------------------------------------------------------------------------
 
+import os as _os
 import re as _re
 
-from agentic_tvg.judge import judge_answer
+# R_acc instrument selector (split 2026-09-01). judge.py is the v1 instrument
+# (haiku, one-word rubric) that produced every v1 number in results/;
+# judge_v2.py is the sonnet + question-anchored-rubric instrument. Default v1.
+# Select with the env var, never by editing this import: the instrument a run
+# used is then recorded in its environment and hydra config, not in a diff
+# nobody re-reads. v1 and v2 verdicts are NOT comparable (separate caches).
+if _os.environ.get("JUDGE_V", "1") == "2":
+    from agentic_tvg.judge_v2 import judge_answer
+else:
+    from agentic_tvg.judge import judge_answer
 from agentic_tvg.answer_match import answer_matches, expand_aliases, parse_answer_qa
 
 TIME_WEIGHT = 0.5  # lambda on the evidence-IoU term; 0 disables it (cut ablation)
