@@ -125,6 +125,16 @@ filter) are done. **Cost note: the machine wipe (2026-09-01) lost the v2
 cache (295 rows) — the run starts cold: ~34K fresh sonnet-5 verdicts.
 Estimate the API bill before launch.**
 
+One more fix landed mid-stage-1 (2026-09-01 late; effective from the next
+process start — stage 2 or any resume): the cache now refreshes
+incrementally from the file before every miss and re-checks after every API
+return, with first-verdict-wins enforced at load. Under the async agent
+loop each worker previously saw only its own verdicts plus the file as of
+its first load — the cold-cache step-0 val duplicated 47% of its judge
+calls (146/309). Residual duplication window is one in-flight API call
+(round-1's ~0.1% regime). judge.py (v1) is deliberately untouched — frozen
+instrument. Regression tests: `tests/test_judge_cache.py`.
+
 ### 3b. Reward `compute_score_qa2` — DONE, smaller than first drafted
 
 `R = 0.5·format + judge_acc + TIME_WEIGHT_V2 · evidence_iou`, with
