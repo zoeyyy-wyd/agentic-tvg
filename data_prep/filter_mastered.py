@@ -6,8 +6,10 @@ rollouts. A prompt whose visit came back with mean acc >= --threshold is very
 likely to be pure saturation next epoch -- calibrated on round 1, where each
 prompt got one visit per epoch: a >= 0.875 epoch-1 visit was mastered again in
 epoch 2 85% of the time (52% with literally zero acc variance), and a
-0.75-0.875 visit 57% of the time (GRPO_RESULTS §4). Cutting at 0.75 dropped
-26.4% of prompts and would have cut epoch-2 mastered groups 23.1% -> 4.9%.
+0.75-0.875 visit 57% of the time (GRPO_RESULTS §4). Default 0.9 (user call
+2026-09-03: keep the 0.75-0.9 band -- its groups still carry variance; only
+the >=0.9 spike is dead weight). Launch stage 2 with run_grpo_stage2.sh,
+which derives EPOCHS/TOTAL_STEPS from disk state.
 
 Keeps: every prompt below threshold, and every prompt the sampler never
 reached (drop_last leaves a few unvisited per epoch). The hard end is kept on
@@ -45,7 +47,7 @@ def main() -> None:
     ap.add_argument("--rollouts", type=Path, default=Path("results/grpo-v2/rollouts"))
     ap.add_argument("--rl-train", type=Path, default=Path("data/processed/rl_train.parquet"))
     ap.add_argument("--out", type=Path, default=Path("data/processed/rl_train_ep2.parquet"))
-    ap.add_argument("--threshold", type=float, default=0.75,
+    ap.add_argument("--threshold", type=float, default=0.9,
                     help="drop prompts whose (last) visit mean acc >= this")
     ap.add_argument("--max-step", type=int, default=0,
                     help="only use visits from steps <= this (0 = all; set it when testing "
@@ -100,13 +102,19 @@ def main() -> None:
     sel_path.write_text(json.dumps(sel, indent=1, ensure_ascii=False))
 
     n2 = int(keep.sum()) // args.batch_size
+    # verl skips "already-run" epochs on resume: current_epoch = global_steps //
+    # len(new_dataloader), and the loop is range(current_epoch, total_epochs).
+    # With the smaller stage-2 pool that quotient jumps past 0, so EPOCHS must
+    # be current_epoch + 1 or the loop body never runs (bit us 2026-09-03:
+    # EPOCHS=1 exited cleanly after val_before_train with zero training steps).
+    epochs2 = max_step // n2 + 1
     print(f"visited {len(last)}/{len(df)} prompts through step {max_step} | "
           f"dropped {int((~keep).sum())} (visit acc >= {args.threshold}) | "
           f"kept {int(keep.sum())} incl. {int((acc < 0).sum())} unvisited")
     print(f"-> {args.out} + {sel_path.name}")
     print(f"stage 2 ({n2} steps on the kept pool, resuming past step {max_step}):")
     print(f"  mv <ckpt>/global_step_{max_step}/data.pt{{,.bak}}   # see GRPO2_PLAN §4 -- MUST precede the resume")
-    print(f"  EPOCHS=1 TOTAL_STEPS={max_step + n2} TRAIN_FILE={args.out} bash run_grpo.sh")
+    print(f"  EPOCHS={epochs2} TOTAL_STEPS={max_step + n2} TRAIN_FILE={args.out} bash run_grpo.sh")
 
 
 if __name__ == "__main__":

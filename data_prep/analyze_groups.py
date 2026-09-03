@@ -42,13 +42,17 @@ from __future__ import annotations
 
 import argparse
 import collections
+import csv
 import glob
 import json
+import re
 from pathlib import Path
 
 import numpy as np
 
 BANDS = [(1, 40), (40, 80), (80, 120), (120, 160), (160, 200), (200, 240), (240, 10**9)]
+
+QUESTION_RE = re.compile(r'Question: "(.*)"\nAnswer the question based on the video\.', re.DOTALL)
 
 
 def load_groups(rollouts: Path) -> list[tuple[int, list[dict]]]:
@@ -184,12 +188,49 @@ def report_metrics(path: Path) -> None:
     print("  (slopes are per 100 steps)")
 
 
+def report_per_question(groups, out: Path) -> None:
+    """One row per (question, visit): the group-level facts GRPO actually
+    trains on -- mean acc over the K rollouts (the question's accuracy), the
+    within-group variance of the full reward (the advantage's raw material),
+    and the component stats. Also the curriculum's decision table: sort by
+    acc_mean and the filter_mastered cut is the head of the file."""
+    rows = []
+    for step, g in groups:
+        acc = np.array([r["acc"] for r in g])
+        sc = np.array([r["score"] for r in g])
+        iou = np.array([r["evidence_iou"] for r in g])
+        q = QUESTION_RE.search(g[0]["input"])
+        rows.append({
+            "question": q.group(1) if q else "?",
+            "step": step, "k": len(g),
+            "acc_mean": round(acc.mean(), 4), "acc_std": round(acc.std(), 4),
+            "n_full": int((acc == 1.0).sum()), "n_partial": int((acc == 0.5).sum()),
+            "n_wrong": int((acc == 0.0).sum()),
+            "score_mean": round(sc.mean(), 4), "score_var": round(sc.var(), 5),
+            "score_std": round(sc.std(), 4),
+            "iou_mean": round(iou.mean(), 4), "iou_max": round(iou.max(), 4),
+            "zero_acc_var": int(acc.std() < 1e-9), "zero_score_var": int(sc.std() < 1e-9),
+        })
+    rows.sort(key=lambda r: (-r["acc_mean"], -r["score_var"]))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader(); w.writerows(rows)
+    accm = np.array([r["acc_mean"] for r in rows]); sv = np.array([r["score_var"] for r in rows])
+    print(f"per-question: {len(rows)} visits -> {out}")
+    print(f"  acc_mean quartiles {np.percentile(accm,[25,50,75]).round(3).tolist()} | mastered(>=0.9) "
+          f"{(accm>=0.9).mean()*100:.1f}% | >=0.75 {(accm>=0.75).mean()*100:.1f}% | all-wrong {(accm==0).mean()*100:.1f}%")
+    print(f"  score_var quartiles {np.percentile(sv,[25,50,75]).round(4).tolist()} | zero-acc-var "
+          f"{np.mean([r['zero_acc_var'] for r in rows])*100:.1f}% | zero-score-var {np.mean([r['zero_score_var'] for r in rows])*100:.1f}%")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("rollouts", type=Path, help="a run's rollouts/ dir of <step>.jsonl")
     ap.add_argument("--signal", action="store_true")
     ap.add_argument("--reward-ab", action="store_true")
     ap.add_argument("--metrics", type=Path, help="a run's metrics.csv: learning speed vs lr")
+    ap.add_argument("--per-question", type=Path, help="write one row per (question, visit) to this CSV")
     ap.add_argument("--mastered-at", type=float, default=0.9, help="group mean acc counted as mastered")
     ap.add_argument("--time-weights", type=float, nargs="*", default=[1.0, 2.0, 5.0])
     ap.add_argument("--partial-to-full", type=float, default=0.69, help="PARTIAL->FULL share in the judge sim")
@@ -204,6 +245,9 @@ def main() -> None:
         print()
     if args.metrics:
         report_metrics(args.metrics)
+        print()
+    if args.per_question:
+        report_per_question(groups, args.per_question)
         print()
     if args.reward_ab:
         report_reward_ab(groups, args.time_weights, args.partial_to_full, args.seeds)

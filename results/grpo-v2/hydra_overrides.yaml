@@ -1,7 +1,7 @@
 - algorithm.adv_estimator=grpo
 - +ray_kwargs.ray_init.object_store_memory=25769803776
 - algorithm.use_kl_in_reward=False
-- data.train_files=/home/yw4636/agentic-tvg/data/processed/rl_train.parquet
+- data.train_files=/home/yw4636/agentic-tvg/data/processed/rl_train_ep2.parquet
 - data.val_files=/home/yw4636/agentic-tvg/data/processed/rl_val.parquet
 - data.return_raw_chat=True
 - data.train_batch_size=8
@@ -71,4 +71,5 @@
 - +trainer.max_actor_ckpt_to_keep=1
 - trainer.save_freq=20
 - trainer.test_freq=20
-- trainer.total_epochs=1
+- trainer.total_epochs=2
+- trainer.total_training_steps=239

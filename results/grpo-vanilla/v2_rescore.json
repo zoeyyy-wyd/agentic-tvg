@@ -1,0 +1,3128 @@
+{
+ "judge_model": "claude-sonnet-5",
+ "rubric": "v2",
+ "time_weight_v2": 1.0,
+ "files": {
+  "results/grpo-vanilla/val_rollouts_grpo267/240.jsonl": {
+   "n": 114,
+   "means": {
+    "acc_v1_recorded": 0.5482456140350878,
+    "acc_v2": 0.6228070175438597,
+    "format_score": 0.5,
+    "evidence_iou": 0.20751764990382496,
+    "reward_v2": 1.3303246674476845
+   },
+   "rows": [
+    {
+     "question": "What does the person do after laughing and making gestures with the violin and bow?",
+     "answer": "They begin to play the violin.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.03216458997392059,
+     "reward_v2": 1.5321645899739207
+    },
+    {
+     "question": "What pattern of movement does the person use with the violin bow while playing?",
+     "answer": "The person moves the bow back and forth across the strings.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the camels with riders approach the structured tents, what do the animals and their riders do next?",
+     "answer": "They dismount and walk away into the desert.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.36871508173902195,
+     "reward_v2": 1.368715081739022
+    },
+    {
+     "question": "What happens after the man in the white shirt and brown pants falls backward off the slackline for the third time?",
+     "answer": "He gets up and continues to perform slackline tricks, then a man in a yellow shirt speaks to the camera.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.16595744751471253,
+     "reward_v2": 0.6659574475147125
+    },
+    {
+     "question": "What change in camera perspective occurs after the man in the yellow shirt moves out of the central frame?",
+     "answer": "The camera shifts to a wider shot, capturing more of the surrounding environment.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.014634146412849493,
+     "reward_v2": 1.5146341464128494
+    },
+    {
+     "question": "What item, accompanied by red cords, is placed into the footwell area of the boat by a hand?",
+     "answer": "A pair of ski boots.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3,
+     "reward_v2": 0.8
+    },
+    {
+     "question": "What action does the person perform immediately after riding up the wooden ramp?",
+     "answer": "They perform a jump, launching into the air.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the right knitting needle is inserted into a stitch on the left needle and the yarn is wrapped around the right needle, what action immediately follows?",
+     "answer": "pulls the yarn through the loop",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.73
+    },
+    {
+     "question": "What does the man in the dark suit do immediately after shaking hands with the referee?",
+     "answer": "He turns to face the camera and continues speaking into the microphone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the yellow lawnmower after the man brings the red hose towards it?",
+     "answer": "The man lifts the lawnmower off the ground and moves it away.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.46153846153846156,
+     "reward_v2": 0.9615384615384616
+    },
+    {
+     "question": "What two distinct tools does the stylist consistently use in conjunction to blow dry and style the client's hair?",
+     "answer": "A red hairdryer and a round hairbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.08333333333333333,
+     "reward_v2": 1.5833333333333333
+    },
+    {
+     "question": "What happens to the young skateboarder in the white shirt and helmet after he attempts to ride off the raised wooden platform?",
+     "answer": "He falls off the platform and then gets up.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.8,
+     "reward_v2": 2.3
+    },
+    {
+     "question": "What briefly enters the bottom of the frame and then moves out of view?",
+     "answer": "The person's legs.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What hand gesture does the man on the television perform after he brings his hands up from a lowered position?",
+     "answer": "He makes a peace sign with both hands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What type of seating furniture becomes visible on the right side of the room as the camera pans?",
+     "answer": "A dark-colored armchair.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What patterned garment is placed on the clothing rack?",
+     "answer": "A black garment with white floral patterns.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What three actions does the person perform at the kitchen sink before she starts scrubbing the dishes?",
+     "answer": "She turns on the faucet, adds dish soap to a sponge, and rinses the dishes.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What is the initial action performed with the right knitting needle after the blue ribbed swatch is displayed without movement?",
+     "answer": "Inserting the right needle into the first stitch on the left needle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What festive decoration do a person's hands start to attach across the upper part of the window frame?",
+     "answer": "A long, shimmering, gold-colored tinsel garland.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.46875,
+     "reward_v2": 1.96875
+    },
+    {
+     "question": "What happens to the white ATV after the boy completes a jump and continues riding it on the dirt track?",
+     "answer": "The boy continues riding the white ATV over dirt mounds and successfully completes jumps.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.05,
+     "reward_v2": 0.55
+    },
+    {
+     "question": "What change occurs on the wall after the person dips the roller in the paint tray and begins painting?",
+     "answer": "The wall changes from beige to white as the person begins painting.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the child perform while wearing a patterned skirt and a pink top?",
+     "answer": "The child climbs the staircase.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What do the people do immediately after entering the Saylor Skatepark?",
+     "answer": "They set up a registration banner.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.16666666666666666,
+     "reward_v2": 1.6666666666666667
+    },
+    {
+     "question": "What happens to the leaf pile after the girl in the pink shirt emerges from it?",
+     "answer": "The leaf pile is actively managed and reshaped by a person using a rake.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3125,
+     "reward_v2": 0.8125
+    },
+    {
+     "question": "What is the man in the white t-shirt doing after looking slightly upwards?",
+     "answer": "He is performing a series of energetic and acrobatic movements, including flips and jumps.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object is the person standing near the sliding curler holding?",
+     "answer": "A curling broom.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.375,
+     "reward_v2": 1.875
+    },
+    {
+     "question": "What item is visible on the runner's back after they turn away from the camera and continue running down the road?",
+     "answer": "A race bib.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object does the man wipe with a cloth after he finishes cleaning the piano?",
+     "answer": "A wooden door.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2858555885262111,
+     "reward_v2": 1.785855588526211
+    },
+    {
+     "question": "What is the immediate consequence after the wakeboarder maneuvers over the first white ramp visible in the water?",
+     "answer": "The wakeboarder continues to ride on the water.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What does the wakeboarder do after ascending the white ramp and becoming airborne?",
+     "answer": "He performs a series of dynamic maneuvers, including spins and turns.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "After pouring the contents of a jar into the pan, what action does the person immediately perform with the food?",
+     "answer": "They stir the food in the pan with a wooden spoon.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1,
+     "reward_v2": 1.6
+    },
+    {
+     "question": "After the green grater is placed on the counter, what yellow food item is repeatedly sliced with a knife?",
+     "answer": "A carrot.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is done to the round food item in the left pan using two utensils?",
+     "answer": "The round food item is flipped and pressed down using two utensils.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.075,
+     "reward_v2": 1.075
+    },
+    {
+     "question": "What action is performed to change the cooking side of the circular food item in the black pan?",
+     "answer": "The person uses a utensil to flip the food item over.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the competitor wearing blue gloves after the competitor in the white helmet delivers a high kick?",
+     "answer": "The competitor wearing blue gloves falls to the mat.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What unfurls on the pole towards the back of the boat?",
+     "answer": "A flag unfurls on the pole.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "How does the camera's framing of the boat and ocean change after the initial low-angle view?",
+     "answer": "The camera moves from a close, low-angle view to a wider, elevated perspective, showing more of the ocean and the boat's structure.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What two types of hair are being blow-dried concurrently after the woman begins styling the blonde hair?",
+     "answer": "One client has blonde hair, and another has dark, long hair.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.15789473684210525,
+     "reward_v2": 1.6578947368421053
+    },
+    {
+     "question": "What object does the child use to stand taller at the kitchen sink?",
+     "answer": "A step stool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1456953642384106,
+     "reward_v2": 1.6456953642384107
+    },
+    {
+     "question": "After completing the initial pencil outlines on the canvas, what action does the artist perform to start applying color?",
+     "answer": "The artist uses a brush to apply dark green color to the trees.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4,
+     "reward_v2": 1.9
+    },
+    {
+     "question": "How does the person prepare the white sneakers with yellowed soles before placing them on the outdoor chairs?",
+     "answer": "They apply a cleaning solution to the soles and then cover the sneakers with plastic wrap.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.081910327823943,
+     "reward_v2": 1.581910327823943
+    },
+    {
+     "question": "What type of scores are displayed immediately after all judges' Technical Merit scores are shown?",
+     "answer": "Artistic Expression scores",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3684210526315789,
+     "reward_v2": 1.868421052631579
+    },
+    {
+     "question": "What happens to the skier wearing a blue jacket and light blue pants as they move down the snowy trail?",
+     "answer": "The skier in the blue jacket and light blue pants is seen moving down the snowy trail, navigating through the trees and occasionally interacting with others.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.22,
+     "reward_v2": 0.72
+    },
+    {
+     "question": "What happens to the child as they push the red lawnmower across the grass?",
+     "answer": "The child pushes the red lawnmower back and forth across the grass, showing effort and determination.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09,
+     "reward_v2": 0.59
+    },
+    {
+     "question": "What does the person with chest tattoos use to clean the nose after putting on both blue gloves?",
+     "answer": "A cotton swab.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.9,
+     "reward_v2": 2.4
+    },
+    {
+     "question": "What action does the person perform with the black helmet after it is seen in their hands?",
+     "answer": "They put it on their head.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.26666666666666666,
+     "reward_v2": 0.7666666666666666
+    },
+    {
+     "question": "After sectioning off the top layer of hair with a clip, what two actions does the person perform before blow-drying the bottom layer?",
+     "answer": "They apply a heat protectant spray and use a round brush to style the bottom layer.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3,
+     "reward_v2": 1.8
+    },
+    {
+     "question": "What happens immediately after the player in green, wearing number 7, kicks the ball from a set piece towards the goal?",
+     "answer": "The player who scored the goal celebrates by raising his arms and running towards the sideline.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What happens to the person after they are seen waterskiing across the water?",
+     "answer": "They fall into the water and swim, struggling to stay afloat.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What instrument does the man in the orange shirt with a long beard begin to play on stage after other musicians have joined him?",
+     "answer": "A saxophone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09166666666666666,
+     "reward_v2": 1.5916666666666666
+    },
+    {
+     "question": "What footwear does the second person, wearing a purple top and skirt, put on after approaching the orange cones?",
+     "answer": "Rollerblades",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens after the raft goes over the biggest drop in the river?",
+     "answer": "The raft continues to navigate turbulent waters and eventually reaches calmer sections of the river.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4473684210526316,
+     "reward_v2": 0.9473684210526316
+    },
+    {
+     "question": "After sitting on the floor with several hoops, what body part does the performer use to spin the hoops?",
+     "answer": "Her hands",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1076923076923077,
+     "reward_v2": 0.6076923076923078
+    },
+    {
+     "question": "What does the person do with the red strap-like object retrieved from the small white table?",
+     "answer": "They use it to walk the dog outside.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.76,
+     "reward_v2": 1.76
+    },
+    {
+     "question": "After stopping on the sidewalk, what does the person remove and then re-attach from the dog's head?",
+     "answer": "A red muzzle.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens after the official raises the starter pistol?",
+     "answer": "The runners begin to move forward, indicating the start of the race.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What food is the man primarily eating with his fork while seated at the table?",
+     "answer": "Scrambled eggs",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3157894653739617,
+     "reward_v2": 1.8157894653739617
+    },
+    {
+     "question": "After a person lowers the brindle puppy into the water-filled bathtub, what immediate actions does the puppy take?",
+     "answer": "It attempts to stand and walk in the shallow water.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 0.7
+    },
+    {
+     "question": "What is the first item a person removes from the kitchen sink?",
+     "answer": "A white mug.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.14133333333333337,
+     "reward_v2": 1.6413333333333333
+    },
+    {
+     "question": "What does the woman in the light blue shirt hand to the sumo wrestler she was riding on?",
+     "answer": "A microphone.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.045454545454545456,
+     "reward_v2": 0.5454545454545454
+    },
+    {
+     "question": "What image briefly appears and disappears over the man wearing a Needham Fire shirt and NFD cap?",
+     "answer": "A picture of a baby girl.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5625,
+     "reward_v2": 2.0625
+    },
+    {
+     "question": "After the right hand lifts its fingers, what action does it perform next on the drum head?",
+     "answer": "It strikes the drum head again.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.13333333333333333,
+     "reward_v2": 1.6333333333333333
+    },
+    {
+     "question": "After the man in the orange and black scarf looks down towards his side, what object does he bring to his mouth?",
+     "answer": "A can.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the right knitting needle perform after 'Step 2' appears and before 'Step 3' appears?",
+     "answer": "It knits a stitch by inserting it into a stitch on the left needle, wrapping yarn around it, and pulling it through to create a new stitch.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5714285714285714,
+     "reward_v2": 2.071428571428571
+    },
+    {
+     "question": "After the right knitting needle pulls a new orange yarn loop through an existing stitch, what happens to the original stitch on the left needle?",
+     "answer": "The original stitch is removed from the left needle and transferred to the right needle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What red and yellow object is being cleaned with water after the person exits the garage?",
+     "answer": "A red and yellow children's ride-on toy car.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.34999999999999964,
+     "reward_v2": 1.8499999999999996
+    },
+    {
+     "question": "What happens immediately after the practitioner wearing the red chest protector performs a high kick towards their opponent?",
+     "answer": "The opponent falls to the ground.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person on rollerblades perform when approaching the stairs?",
+     "answer": "They jump up the stairs.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "How many musicians are playing the series of dark, barrel-shaped drums arranged in a row?",
+     "answer": "Three",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What trick does the person in the blue shirt perform on the slackline?",
+     "answer": "He performs a backflip while balancing on the slackline.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3,
+     "reward_v2": 0.8
+    },
+    {
+     "question": "What is displayed on the screen that appears after the white ball enters the goal net?",
+     "answer": "A screen displaying match statistics and team information.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.2
+    },
+    {
+     "question": "What does the person in the yellow shirt do after the motorcycle rider stops near the checkered flags?",
+     "answer": "The person in the yellow shirt approaches the motorcycle and makes adjustments to it.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.44155844155844154,
+     "reward_v2": 1.4415584415584415
+    },
+    {
+     "question": "What happens to Josh Harrington after he performs a trick on the red rail next to the stairs?",
+     "answer": "He falls off his bike.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.75,
+     "reward_v2": 2.25
+    },
+    {
+     "question": "After the baby presses several keys on the left side of the keyboard, what does an adult hand do on the right side of the instrument?",
+     "answer": "The adult hand presses buttons and navigates the display screen and control panel on the right side of the instrument.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.19166666666666668,
+     "reward_v2": 1.6916666666666667
+    },
+    {
+     "question": "What action do the players perform immediately after several colored dodgeballs are lined up on the court?",
+     "answer": "They throw the balls at each other.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.358974358974359,
+     "reward_v2": 0.858974358974359
+    },
+    {
+     "question": "After moving away from the store display featuring clothing and accessories, what type of store aisle does the person first walk through, followed by what fresh food section?",
+     "answer": "They first walk through a general merchandise aisle, then enter a fresh produce section.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What emerges from the water after only a fin is visible?",
+     "answer": "A large fish, specifically a sunfish (mola mola).",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.08,
+     "reward_v2": 1.58
+    },
+    {
+     "question": "After a group of children gather at the pool's starting blocks, what main action do they perform next?",
+     "answer": "They dive into the pool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4810000000000009,
+     "reward_v2": 1.981000000000001
+    },
+    {
+     "question": "What item does the girl sitting on the edge of the pool put on her face?",
+     "answer": "She puts on a pair of swimming goggles.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What specific tag team finisher is demonstrated for the wrestler Batista in the ring?",
+     "answer": "Batista Bomb & RKO",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.35,
+     "reward_v2": 1.85
+    },
+    {
+     "question": "What type of vehicle approaches the large breaking wave after a surfer rides it?",
+     "answer": "A jet ski.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.65,
+     "reward_v2": 2.15
+    },
+    {
+     "question": "What does the person do after adjusting the black fanny pack while wearing a white top and jeans?",
+     "answer": "They take a selfie with their phone.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.12,
+     "reward_v2": 1.62
+    },
+    {
+     "question": "What colors are the top and pole used by the athlete who performs the first successful pole vault?",
+     "answer": "The athlete wears a white top and uses a yellow pole.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.17857142857142858,
+     "reward_v2": 1.1785714285714286
+    },
+    {
+     "question": "After applying toothpaste to his green toothbrush, what does the boy begin to do?",
+     "answer": "He begins to brush his teeth.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6071428571428571,
+     "reward_v2": 2.107142857142857
+    },
+    {
+     "question": "What does the boy in the white shirt do with the tube of toothpaste after picking up his toothbrush?",
+     "answer": "He applies toothpaste to his toothbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.575,
+     "reward_v2": 2.075
+    },
+    {
+     "question": "After lifting the kite control bar and lines high above their head, what action does the person perform to get the kite into the air?",
+     "answer": "They run forward while holding the bar high.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4166666666666667,
+     "reward_v2": 1.9166666666666667
+    },
+    {
+     "question": "What action does the player in the red shirt perform immediately after the player in the blue shirt serves the ball?",
+     "answer": "The player in the red shirt hits the ball with a forehand shot.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person take immediately after experiencing a cut on their finger while working on the drawer?",
+     "answer": "She uses sandpaper to clean the cut on her finger.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What color swimsuit is the person wearing while riding the large wave on the surfboard?",
+     "answer": "Red",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5333333333333333,
+     "reward_v2": 2.033333333333333
+    },
+    {
+     "question": "What repeatedly happens to the player wearing a black jersey with white shoulder markings while attempting to play hockey?",
+     "answer": "He repeatedly falls on the ice.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.38333333333333336,
+     "reward_v2": 1.8833333333333333
+    },
+    {
+     "question": "What two eating utensils are primarily used to consume the food from the large black bowl?",
+     "answer": "Chopsticks",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.25,
+     "reward_v2": 1.25
+    },
+    {
+     "question": "Identify the colors of the doll-shaped shakers used to season the salad, in the order they appear.",
+     "answer": "Red, then yellow with a blue band",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.6382978723404256,
+     "reward_v2": 1.6382978723404256
+    },
+    {
+     "question": "Who helps the child wearing a white shirt and bib to rake leaves into the blue pool?",
+     "answer": "An adult.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.06,
+     "reward_v2": 1.56
+    },
+    {
+     "question": "What is worn on the hands of the man and woman after they demonstrate the basic rock, paper, scissors gestures with bare hands?",
+     "answer": "They wear gloves.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.5,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What kind of aerial maneuver does the person perform immediately after jumping off the trampoline?",
+     "answer": "A backflip.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What change in visual content is observable across the entire clip?",
+     "answer": "The video transitions to a black screen.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What does the person do on the window immediately after finishing cleaning an indoor section and stepping out onto the patio?",
+     "answer": "They continue cleaning the window from the outdoor section.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.07240137070556185,
+     "reward_v2": 1.572401370705562
+    },
+    {
+     "question": "What happens to the arm of the man in the black shirt after it is nearly pinned down by his opponent during their arm wrestling match?",
+     "answer": "His arm is released from the pinning position.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.7698229407236334,
+     "reward_v2": 1.7698229407236334
+    },
+    {
+     "question": "What happens to the runner wearing bib 258 as she is running on the muddy ground?",
+     "answer": "She loses her footing and falls, sliding on the mud before getting up and continuing to run.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "After the man in the white shirt kicks the yellow ball high into the air, what happens to it?",
+     "answer": "It lands on the ground.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is visible inside the framed picture that a woman holds up while being interviewed?",
+     "answer": "It shows the interior of a white van with yellow lining and dog cages or kennels.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4,
+     "reward_v2": 1.9
+    },
+    {
+     "question": "What activity is the Boston Terrier performing after the small, light brown dog runs through the grass?",
+     "answer": "It is lying down and panting with its tongue out.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5,
+     "reward_v2": 2.0
+    },
+    {
+     "question": "What tool does the person use to spread the white cleaning powder after it's sprinkled in the sink?",
+     "answer": "A sponge.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6111111111111112,
+     "reward_v2": 2.111111111111111
+    },
+    {
+     "question": "What action does the scuba diver perform after reaching the submerged vehicle?",
+     "answer": "They examine the interior of the vehicle and then move on to investigate a large stone structure.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.296875,
+     "reward_v2": 1.296875
+    },
+    {
+     "question": "After the diver moves further inside from the large rectangular opening, what animal swims into view through it?",
+     "answer": "A shark.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens to the red, green, and blue kite after the man in the striped shirt first attempts to launch it?",
+     "answer": "It successfully takes flight and soars high into the sky.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 0.73
+    },
+    {
+     "question": "After the person brings the cup towards their mouth and tilts it for a drink, what is visible inside the cup when it is lowered again?",
+     "answer": "A light brown liquid, likely coffee or tea.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What item does a hand interact with after being visible near red coffee containers?",
+     "answer": "A hand sanitizer dispenser.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is placed on the mannequin that was previously wearing a black hooded garment, after the hooded person inspects it?",
+     "answer": "A light-colored, round hat.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is done with the red long-sleeved top and blue jeans after they are laid out together on the bed?",
+     "answer": "The red long-sleeved top and blue jeans are folded and then repacked into the red shopping bag.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1306532663316583,
+     "reward_v2": 0.6306532663316583
+    },
+    {
+     "question": "What does the camera capture after it exits the store where a 'CLOSE' sign is prominently displayed on the glass door?",
+     "answer": "The camera captures the exterior of the building and the surrounding area, including the covered walkway and other storefronts.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23333333333333334,
+     "reward_v2": 0.7333333333333334
+    },
+    {
+     "question": "What type of handheld device is used to groom the red couch?",
+     "answer": "A handheld vacuum cleaner.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What action is performed on the window located next to the counter displaying cleaning sprays and a coffee maker?",
+     "answer": "The window is opened.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What small, light-colored, roundish items are released onto the dark floor by the person in the foreground?",
+     "answer": "Small, light-colored, roundish items, likely confetti or similar, are released and land on the dark floor.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    }
+   ]
+  },
+  "results/grpo-vanilla/val_rollouts_grpo267/260.jsonl": {
+   "n": 114,
+   "means": {
+    "acc_v1_recorded": 0.5394736842105263,
+    "acc_v2": 0.5921052631578947,
+    "format_score": 0.5,
+    "evidence_iou": 0.22463987011457748,
+    "reward_v2": 1.3167451332724722
+   },
+   "rows": [
+    {
+     "question": "What does the person do after laughing and making gestures with the violin and bow?",
+     "answer": "They begin to play the violin.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.16057142857142856,
+     "reward_v2": 1.6605714285714286
+    },
+    {
+     "question": "What pattern of movement does the person use with the violin bow while playing?",
+     "answer": "The person uses a back-and-forth motion with the bow, moving it across the strings from left to right and back again.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the camels with riders approach the structured tents, what do the animals and their riders do next?",
+     "answer": "They walk across the sandy desert landscape.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.36871508173902195,
+     "reward_v2": 0.8687150817390219
+    },
+    {
+     "question": "What happens after the man in the white shirt and brown pants falls backward off the slackline for the third time?",
+     "answer": "He gets up and continues his slackline performance.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 1.1
+    },
+    {
+     "question": "What change in camera perspective occurs after the man in the yellow shirt moves out of the central frame?",
+     "answer": "The camera pulls back to a wider shot, revealing more of the park and its surroundings.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.014634146412849493,
+     "reward_v2": 1.5146341464128494
+    },
+    {
+     "question": "What item, accompanied by red cords, is placed into the footwell area of the boat by a hand?",
+     "answer": "A pair of ski boots.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 0.7
+    },
+    {
+     "question": "What action does the person perform immediately after riding up the wooden ramp?",
+     "answer": "They jump into the air.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the right knitting needle is inserted into a stitch on the left needle and the yarn is wrapped around the right needle, what action immediately follows?",
+     "answer": "It pulls the yarn through the stitch.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.73
+    },
+    {
+     "question": "What does the man in the dark suit do immediately after shaking hands with the referee?",
+     "answer": "He turns to face the camera and continues speaking into the microphone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the yellow lawnmower after the man brings the red hose towards it?",
+     "answer": "The man pulls the lawnmower away with the hose.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.46153846153846156,
+     "reward_v2": 0.9615384615384616
+    },
+    {
+     "question": "What two distinct tools does the stylist consistently use in conjunction to blow dry and style the client's hair?",
+     "answer": "A red hairdryer and a round hairbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.062111801242236024,
+     "reward_v2": 1.562111801242236
+    },
+    {
+     "question": "What happens to the young skateboarder in the white shirt and helmet after he attempts to ride off the raised wooden platform?",
+     "answer": "He falls off the platform and lands on his hands and knees.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.8,
+     "reward_v2": 1.8
+    },
+    {
+     "question": "What briefly enters the bottom of the frame and then moves out of view?",
+     "answer": "A person's legs.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What hand gesture does the man on the television perform after he brings his hands up from a lowered position?",
+     "answer": "He makes a peace sign with both hands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What type of seating furniture becomes visible on the right side of the room as the camera pans?",
+     "answer": "A dark-colored armchair.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What patterned garment is placed on the clothing rack?",
+     "answer": "A black garment with white and purple floral patterns.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What three actions does the person perform at the kitchen sink before she starts scrubbing the dishes?",
+     "answer": "She turns on the faucet, rinses the dishes, and applies dish soap to a sponge.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What is the initial action performed with the right knitting needle after the blue ribbed swatch is displayed without movement?",
+     "answer": "The right knitting needle is inserted into the first stitch on the left needle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What festive decoration do a person's hands start to attach across the upper part of the window frame?",
+     "answer": "A golden tinsel garland.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.425,
+     "reward_v2": 1.925
+    },
+    {
+     "question": "What happens to the white ATV after the boy completes a jump and continues riding it on the dirt track?",
+     "answer": "The boy successfully completes a jump on the white ATV and continues riding it on the dirt track.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.05,
+     "reward_v2": 0.55
+    },
+    {
+     "question": "What change occurs on the wall after the person dips the roller in the paint tray and begins painting?",
+     "answer": "The wall changes from its original color to a fresh coat of white paint.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the child perform while wearing a patterned skirt and a pink top?",
+     "answer": "The child climbs the stairs.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What do the people do immediately after entering the Saylor Skatepark?",
+     "answer": "They ride BMX bikes and perform tricks.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 0.7
+    },
+    {
+     "question": "What happens to the leaf pile after the girl in the pink shirt emerges from it?",
+     "answer": "The leaf pile is significantly disturbed by a person pushing and moving leaves around it.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.8333333333333334,
+     "reward_v2": 1.8333333333333335
+    },
+    {
+     "question": "What is the man in the white t-shirt doing after looking slightly upwards?",
+     "answer": "He is performing flips and handstands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object is the person standing near the sliding curler holding?",
+     "answer": "A curling broom.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.375,
+     "reward_v2": 1.875
+    },
+    {
+     "question": "What item is visible on the runner's back after they turn away from the camera and continue running down the road?",
+     "answer": "A race bib.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object does the man wipe with a cloth after he finishes cleaning the piano?",
+     "answer": "A wooden door.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.15,
+     "reward_v2": 1.65
+    },
+    {
+     "question": "What is the immediate consequence after the wakeboarder maneuvers over the first white ramp visible in the water?",
+     "answer": "The wakeboarder continues to ride on the water.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What does the wakeboarder do after ascending the white ramp and becoming airborne?",
+     "answer": "He continues to ride and perform various maneuvers on the water.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "After pouring the contents of a jar into the pan, what action does the person immediately perform with the food?",
+     "answer": "They stir the food in the pan with a wooden spoon.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the green grater is placed on the counter, what yellow food item is repeatedly sliced with a knife?",
+     "answer": "A carrot.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is done to the round food item in the left pan using two utensils?",
+     "answer": "The person flips and presses the round food item in the left pan using two utensils.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.075,
+     "reward_v2": 1.575
+    },
+    {
+     "question": "What action is performed to change the cooking side of the circular food item in the black pan?",
+     "answer": "The person uses a spatula to flip the food over.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the competitor wearing blue gloves after the competitor in the white helmet delivers a high kick?",
+     "answer": "The competitor wearing blue gloves falls to the mat.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What unfurls on the pole towards the back of the boat?",
+     "answer": "A flag unfurls on the pole.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "How does the camera's framing of the boat and ocean change after the initial low-angle view?",
+     "answer": "The camera shifts to a higher, more expansive view of the ocean and the boat.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What two types of hair are being blow-dried concurrently after the woman begins styling the blonde hair?",
+     "answer": "Blonde and dark hair",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.15789473684210525,
+     "reward_v2": 1.6578947368421053
+    },
+    {
+     "question": "What object does the child use to stand taller at the kitchen sink?",
+     "answer": "A step stool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.22,
+     "reward_v2": 1.72
+    },
+    {
+     "question": "After completing the initial pencil outlines on the canvas, what action does the artist perform to start applying color?",
+     "answer": "The artist uses a brush to apply dark green paint to the trees and then mixes colors on a palette before applying lighter shades to the sky and water.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "How does the person prepare the white sneakers with yellowed soles before placing them on the outdoor chairs?",
+     "answer": "They apply a cleaning solution to the soles and then cover them with plastic wrap.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09014169430208017,
+     "reward_v2": 1.59014169430208
+    },
+    {
+     "question": "What type of scores are displayed immediately after all judges' Technical Merit scores are shown?",
+     "answer": "Artistic Expression scores",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.39622641509433965,
+     "reward_v2": 1.8962264150943398
+    },
+    {
+     "question": "What happens to the skier wearing a blue jacket and light blue pants as they move down the snowy trail?",
+     "answer": "The skier in the blue jacket and light blue pants is seen moving down the snowy trail, navigating through the trees and occasionally interacting with others.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.22,
+     "reward_v2": 0.72
+    },
+    {
+     "question": "What happens to the child as they push the red lawnmower across the grass?",
+     "answer": "The child pushes the red lawnmower across the grass, exerting effort and moving it back and forth.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0743801652892562,
+     "reward_v2": 0.5743801652892562
+    },
+    {
+     "question": "What does the person with chest tattoos use to clean the nose after putting on both blue gloves?",
+     "answer": "A cotton swab.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.9,
+     "reward_v2": 2.4
+    },
+    {
+     "question": "What action does the person perform with the black helmet after it is seen in their hands?",
+     "answer": "They put it on their head.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.8,
+     "reward_v2": 1.3
+    },
+    {
+     "question": "After sectioning off the top layer of hair with a clip, what two actions does the person perform before blow-drying the bottom layer?",
+     "answer": "They apply a heat protector and use a round-barreled brush to dry the hair in an up-and-out motion to increase volume.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.45,
+     "reward_v2": 1.45
+    },
+    {
+     "question": "What happens immediately after the player in green, wearing number 7, kicks the ball from a set piece towards the goal?",
+     "answer": "He celebrates by raising his arms and interacting with teammates.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What happens to the person after they are seen waterskiing across the water?",
+     "answer": "They fall into the water and swim, struggling to stay afloat.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What instrument does the man in the orange shirt with a long beard begin to play on stage after other musicians have joined him?",
+     "answer": "A saxophone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.06140350877192982,
+     "reward_v2": 1.5614035087719298
+    },
+    {
+     "question": "What footwear does the second person, wearing a purple top and skirt, put on after approaching the orange cones?",
+     "answer": "Rollerblades",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens after the raft goes over the biggest drop in the river?",
+     "answer": "The raft continues to move through the river, with the group still actively paddling and navigating the water.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4473684210526316,
+     "reward_v2": 0.9473684210526316
+    },
+    {
+     "question": "After sitting on the floor with several hoops, what body part does the performer use to spin the hoops?",
+     "answer": "Her hands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1076923076923077,
+     "reward_v2": 0.6076923076923078
+    },
+    {
+     "question": "What does the person do with the red strap-like object retrieved from the small white table?",
+     "answer": "They use it as a leash to walk the dog.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6333333333333333,
+     "reward_v2": 2.1333333333333333
+    },
+    {
+     "question": "After stopping on the sidewalk, what does the person remove and then re-attach from the dog's head?",
+     "answer": "A face mask.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens after the official raises the starter pistol?",
+     "answer": "The runners begin to move forward, indicating the start of the race.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What food is the man primarily eating with his fork while seated at the table?",
+     "answer": "Scrambled eggs",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3157894653739617,
+     "reward_v2": 1.8157894653739617
+    },
+    {
+     "question": "After a person lowers the brindle puppy into the water-filled bathtub, what immediate actions does the puppy take?",
+     "answer": "The puppy paddles its legs and moves its body in the water.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "What is the first item a person removes from the kitchen sink?",
+     "answer": "A white mug.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.14133333333333337,
+     "reward_v2": 1.6413333333333333
+    },
+    {
+     "question": "What does the woman in the light blue shirt hand to the sumo wrestler she was riding on?",
+     "answer": "A microphone.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What image briefly appears and disappears over the man wearing a Needham Fire shirt and NFD cap?",
+     "answer": "A picture of a baby.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5625,
+     "reward_v2": 2.0625
+    },
+    {
+     "question": "After the right hand lifts its fingers, what action does it perform next on the drum head?",
+     "answer": "It strikes the drum head with its palm.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "After the man in the orange and black scarf looks down towards his side, what object does he bring to his mouth?",
+     "answer": "A piece of food, likely a sandwich.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What action does the right knitting needle perform after 'Step 2' appears and before 'Step 3' appears?",
+     "answer": "It inserts the needle into a stitch, wraps the yarn, and pulls it through to form a new stitch.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5714285714285714,
+     "reward_v2": 2.071428571428571
+    },
+    {
+     "question": "After the right knitting needle pulls a new orange yarn loop through an existing stitch, what happens to the original stitch on the left needle?",
+     "answer": "The original stitch is removed from the left needle and transferred to the right needle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What red and yellow object is being cleaned with water after the person exits the garage?",
+     "answer": "A red and yellow children's ride-on toy car.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.34999999999999964,
+     "reward_v2": 1.8499999999999996
+    },
+    {
+     "question": "What happens immediately after the practitioner wearing the red chest protector performs a high kick towards their opponent?",
+     "answer": "The opponent falls to the ground.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person on rollerblades perform when approaching the stairs?",
+     "answer": "They step up the stairs using their rollerblades.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.9090909090909091,
+     "reward_v2": 1.4090909090909092
+    },
+    {
+     "question": "How many musicians are playing the series of dark, barrel-shaped drums arranged in a row?",
+     "answer": "Three",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What trick does the person in the blue shirt perform on the slackline?",
+     "answer": "They perform a split while balancing on the slackline.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.21428571428571427,
+     "reward_v2": 1.7142857142857142
+    },
+    {
+     "question": "What is displayed on the screen that appears after the white ball enters the goal net?",
+     "answer": "A screen displaying match statistics and team information.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.1,
+     "reward_v2": 1.1
+    },
+    {
+     "question": "What does the person in the yellow shirt do after the motorcycle rider stops near the checkered flags?",
+     "answer": "The person in the yellow shirt approaches the motorcycle and makes adjustments to it.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.44155844155844154,
+     "reward_v2": 1.4415584415584415
+    },
+    {
+     "question": "What happens to Josh Harrington after he performs a trick on the red rail next to the stairs?",
+     "answer": "He falls off his bike and lands on the ground.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.75,
+     "reward_v2": 2.25
+    },
+    {
+     "question": "After the baby presses several keys on the left side of the keyboard, what does an adult hand do on the right side of the instrument?",
+     "answer": "The adult hand presses buttons on the right side of the instrument.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.73
+    },
+    {
+     "question": "What action do the players perform immediately after several colored dodgeballs are lined up on the court?",
+     "answer": "They begin to actively engage in a game of dodgeball, running and throwing the balls at each other.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.358974358974359,
+     "reward_v2": 0.858974358974359
+    },
+    {
+     "question": "After moving away from the store display featuring clothing and accessories, what type of store aisle does the person first walk through, followed by what fresh food section?",
+     "answer": "They first walk through a general merchandise aisle, then enter a fresh food section with fruits and vegetables.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What emerges from the water after only a fin is visible?",
+     "answer": "A sunfish",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.13333333333333333,
+     "reward_v2": 1.6333333333333333
+    },
+    {
+     "question": "After a group of children gather at the pool's starting blocks, what main action do they perform next?",
+     "answer": "They jump into the pool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4810000000000009,
+     "reward_v2": 1.981000000000001
+    },
+    {
+     "question": "What item does the girl sitting on the edge of the pool put on her face?",
+     "answer": "A swim cap.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What specific tag team finisher is demonstrated for the wrestler Batista in the ring?",
+     "answer": "Batista Bomb & RKO",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.35,
+     "reward_v2": 1.85
+    },
+    {
+     "question": "What type of vehicle approaches the large breaking wave after a surfer rides it?",
+     "answer": "A jet ski.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.38461538461538464,
+     "reward_v2": 1.8846153846153846
+    },
+    {
+     "question": "What does the person do after adjusting the black fanny pack while wearing a white top and jeans?",
+     "answer": "They take a selfie with their phone.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.15,
+     "reward_v2": 1.65
+    },
+    {
+     "question": "What colors are the top and pole used by the athlete who performs the first successful pole vault?",
+     "answer": "The athlete wears a white top and uses a yellow pole.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.17857142857142858,
+     "reward_v2": 1.1785714285714286
+    },
+    {
+     "question": "After applying toothpaste to his green toothbrush, what does the boy begin to do?",
+     "answer": "He begins to brush his teeth.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6071428571428571,
+     "reward_v2": 2.107142857142857
+    },
+    {
+     "question": "What does the boy in the white shirt do with the tube of toothpaste after picking up his toothbrush?",
+     "answer": "He applies toothpaste to his toothbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.575,
+     "reward_v2": 2.075
+    },
+    {
+     "question": "After lifting the kite control bar and lines high above their head, what action does the person perform to get the kite into the air?",
+     "answer": "They run forward while holding the bar high.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4166666666666667,
+     "reward_v2": 1.9166666666666667
+    },
+    {
+     "question": "What action does the player in the red shirt perform immediately after the player in the blue shirt serves the ball?",
+     "answer": "The player in the red shirt hits the ball with their paddle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person take immediately after experiencing a cut on their finger while working on the drawer?",
+     "answer": "She applies white paint to a small piece of wood, likely a drawer handle.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What color swimsuit is the person wearing while riding the large wave on the surfboard?",
+     "answer": "Red",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5333333333333333,
+     "reward_v2": 2.033333333333333
+    },
+    {
+     "question": "What repeatedly happens to the player wearing a black jersey with white shoulder markings while attempting to play hockey?",
+     "answer": "He repeatedly falls or is knocked down.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.38333333333333336,
+     "reward_v2": 1.8833333333333333
+    },
+    {
+     "question": "What two eating utensils are primarily used to consume the food from the large black bowl?",
+     "answer": "Chopsticks and a spoon.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.25,
+     "reward_v2": 1.75
+    },
+    {
+     "question": "Identify the colors of the doll-shaped shakers used to season the salad, in the order they appear.",
+     "answer": "Red and black, then blue and yellow",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6382978723404256,
+     "reward_v2": 1.1382978723404256
+    },
+    {
+     "question": "Who helps the child wearing a white shirt and bib to rake leaves into the blue pool?",
+     "answer": "An adult in a light-colored top and blue jeans.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.075,
+     "reward_v2": 1.575
+    },
+    {
+     "question": "What is worn on the hands of the man and woman after they demonstrate the basic rock, paper, scissors gestures with bare hands?",
+     "answer": "They wear gloves.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.5,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What kind of aerial maneuver does the person perform immediately after jumping off the trampoline?",
+     "answer": "A backflip.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What change in visual content is observable across the entire clip?",
+     "answer": "The video transitions to a black screen.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What does the person do on the window immediately after finishing cleaning an indoor section and stepping out onto the patio?",
+     "answer": "They begin cleaning the window from the outdoor perspective.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.36114016736401683,
+     "reward_v2": 1.3611401673640169
+    },
+    {
+     "question": "What happens to the arm of the man in the black shirt after it is nearly pinned down by his opponent during their arm wrestling match?",
+     "answer": "He releases his grip and his arm is pulled back.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.7698229407236334,
+     "reward_v2": 1.2698229407236334
+    },
+    {
+     "question": "What happens to the runner wearing bib 258 as she is running on the muddy ground?",
+     "answer": "She loses her footing and falls, sliding on the mud before getting up and continuing to run.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "After the man in the white shirt kicks the yellow ball high into the air, what happens to it?",
+     "answer": "It falls back down to the ground.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is visible inside the framed picture that a woman holds up while being interviewed?",
+     "answer": "A white van with its rear doors open, revealing a yellow interior.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What activity is the Boston Terrier performing after the small, light brown dog runs through the grass?",
+     "answer": "It is lying on the grass, panting with its tongue out.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5,
+     "reward_v2": 2.0
+    },
+    {
+     "question": "What tool does the person use to spread the white cleaning powder after it's sprinkled in the sink?",
+     "answer": "A sponge.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6521739130434783,
+     "reward_v2": 2.1521739130434785
+    },
+    {
+     "question": "What action does the scuba diver perform after reaching the submerged vehicle?",
+     "answer": "The diver examines the vehicle's interior and then moves away to explore the surrounding underwater environment.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.296875,
+     "reward_v2": 0.796875
+    },
+    {
+     "question": "After the diver moves further inside from the large rectangular opening, what animal swims into view through it?",
+     "answer": "A shark.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens to the red, green, and blue kite after the man in the striped shirt first attempts to launch it?",
+     "answer": "The kite successfully takes flight and is flown by the man in the striped shirt.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.23
+    },
+    {
+     "question": "After the person brings the cup towards their mouth and tilts it for a drink, what is visible inside the cup when it is lowered again?",
+     "answer": "It contains a light brown liquid, likely coffee or tea.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What item does a hand interact with after being visible near red coffee containers?",
+     "answer": "A white cup.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is placed on the mannequin that was previously wearing a black hooded garment, after the hooded person inspects it?",
+     "answer": "A light-colored hat.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is done with the red long-sleeved top and blue jeans after they are laid out together on the bed?",
+     "answer": "They are photographed, then folded, and placed back into the red shopping bag.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What does the camera capture after it exits the store where a 'CLOSE' sign is prominently displayed on the glass door?",
+     "answer": "It captures the covered walkway and other storefronts.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23333333333333334,
+     "reward_v2": 0.7333333333333334
+    },
+    {
+     "question": "What type of handheld device is used to groom the red couch?",
+     "answer": "A handheld vacuum cleaner.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What action is performed on the window located next to the counter displaying cleaning sprays and a coffee maker?",
+     "answer": "The window is opened.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What small, light-colored, roundish items are released onto the dark floor by the person in the foreground?",
+     "answer": "Small, light-colored, roundish items, likely small balls or similar objects, are released onto the dark floor.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    }
+   ]
+  },
+  "results/grpo-vanilla/val_rollouts_grpo267/267.jsonl": {
+   "n": 114,
+   "means": {
+    "acc_v1_recorded": 0.5043859649122807,
+    "acc_v2": 0.5921052631578947,
+    "format_score": 0.5,
+    "evidence_iou": 0.21783046012210616,
+    "reward_v2": 1.309935723280001
+   },
+   "rows": [
+    {
+     "question": "What does the person do after laughing and making gestures with the violin and bow?",
+     "answer": "They begin to play the violin.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.22479999999999997,
+     "reward_v2": 1.7247999999999999
+    },
+    {
+     "question": "What pattern of movement does the person use with the violin bow while playing?",
+     "answer": "The person uses a back-and-forth motion with the bow, moving it across the strings from left to right and back again.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the camels with riders approach the structured tents, what do the animals and their riders do next?",
+     "answer": "They walk across the sandy desert landscape.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.36871508173902195,
+     "reward_v2": 0.8687150817390219
+    },
+    {
+     "question": "What happens after the man in the white shirt and brown pants falls backward off the slackline for the third time?",
+     "answer": "He gets up and walks away from the slackline, then interacts with another person.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.45,
+     "reward_v2": 1.45
+    },
+    {
+     "question": "What change in camera perspective occurs after the man in the yellow shirt moves out of the central frame?",
+     "answer": "The camera shifts to a wider shot, capturing more of the surrounding environment.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.017142857240816323,
+     "reward_v2": 1.5171428572408163
+    },
+    {
+     "question": "What item, accompanied by red cords, is placed into the footwell area of the boat by a hand?",
+     "answer": "A pair of ski boots.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 0.7
+    },
+    {
+     "question": "What action does the person perform immediately after riding up the wooden ramp?",
+     "answer": "They jump into the air.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the right knitting needle is inserted into a stitch on the left needle and the yarn is wrapped around the right needle, what action immediately follows?",
+     "answer": "It pulls the yarn through the loop on the left needle.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.73
+    },
+    {
+     "question": "What does the man in the dark suit do immediately after shaking hands with the referee?",
+     "answer": "He turns to face the camera and continues speaking into the microphone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the yellow lawnmower after the man brings the red hose towards it?",
+     "answer": "The man pulls the lawnmower away with the hose.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.46153846153846156,
+     "reward_v2": 0.9615384615384616
+    },
+    {
+     "question": "What two distinct tools does the stylist consistently use in conjunction to blow dry and style the client's hair?",
+     "answer": "A red hairdryer and a round hairbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.062111801242236024,
+     "reward_v2": 1.562111801242236
+    },
+    {
+     "question": "What happens to the young skateboarder in the white shirt and helmet after he attempts to ride off the raised wooden platform?",
+     "answer": "He falls off the platform and lands on his hands and knees.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.8,
+     "reward_v2": 1.8
+    },
+    {
+     "question": "What briefly enters the bottom of the frame and then moves out of view?",
+     "answer": "A person's legs.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What hand gesture does the man on the television perform after he brings his hands up from a lowered position?",
+     "answer": "He makes a peace sign with both hands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What type of seating furniture becomes visible on the right side of the room as the camera pans?",
+     "answer": "A dark-colored armchair.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What patterned garment is placed on the clothing rack?",
+     "answer": "A black garment with white and yellow floral patterns.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.06818181818181818,
+     "reward_v2": 1.0681818181818181
+    },
+    {
+     "question": "What three actions does the person perform at the kitchen sink before she starts scrubbing the dishes?",
+     "answer": "She turns on the faucet, adds dish soap, and rinses the dishes.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What is the initial action performed with the right knitting needle after the blue ribbed swatch is displayed without movement?",
+     "answer": "The right knitting needle is inserted into a stitch and pulls the yarn through to create a loop.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What festive decoration do a person's hands start to attach across the upper part of the window frame?",
+     "answer": "A golden tinsel garland.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.40540540540540543,
+     "reward_v2": 1.9054054054054055
+    },
+    {
+     "question": "What happens to the white ATV after the boy completes a jump and continues riding it on the dirt track?",
+     "answer": "The boy rides the white ATV, completes a jump, and continues riding it on the dirt track.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.06666666666666667,
+     "reward_v2": 0.5666666666666667
+    },
+    {
+     "question": "What change occurs on the wall after the person dips the roller in the paint tray and begins painting?",
+     "answer": "The wall changes from its original color to a fresh coat of paint.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.03345724907063197,
+     "reward_v2": 1.033457249070632
+    },
+    {
+     "question": "What action does the child perform while wearing a patterned skirt and a pink top?",
+     "answer": "The child climbs the staircase while holding onto the railing.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What do the people do immediately after entering the Saylor Skatepark?",
+     "answer": "They perform BMX tricks on ramps and rails.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.13333333333333333,
+     "reward_v2": 0.6333333333333333
+    },
+    {
+     "question": "What happens to the leaf pile after the girl in the pink shirt emerges from it?",
+     "answer": "The leaf pile is actively raked and compacted by another person.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3125,
+     "reward_v2": 0.8125
+    },
+    {
+     "question": "What is the man in the white t-shirt doing after looking slightly upwards?",
+     "answer": "He is jumping.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object is the person standing near the sliding curler holding?",
+     "answer": "A curling broom.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.375,
+     "reward_v2": 1.875
+    },
+    {
+     "question": "What item is visible on the runner's back after they turn away from the camera and continue running down the road?",
+     "answer": "A race bib.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What object does the man wipe with a cloth after he finishes cleaning the piano?",
+     "answer": "A door.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.839303000968052,
+     "reward_v2": 2.339303000968052
+    },
+    {
+     "question": "What is the immediate consequence after the wakeboarder maneuvers over the first white ramp visible in the water?",
+     "answer": "The wakeboarder lands back on the water and continues riding.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1,
+     "reward_v2": 0.6
+    },
+    {
+     "question": "What does the wakeboarder do after ascending the white ramp and becoming airborne?",
+     "answer": "He performs a series of dynamic maneuvers, including spins and turns, while maintaining control and balance on the board.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "After pouring the contents of a jar into the pan, what action does the person immediately perform with the food?",
+     "answer": "They stir the food in the pan with a wooden spoon.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the green grater is placed on the counter, what yellow food item is repeatedly sliced with a knife?",
+     "answer": "A carrot.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is done to the round food item in the left pan using two utensils?",
+     "answer": "The person flips and presses down the round food item.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.075,
+     "reward_v2": 1.575
+    },
+    {
+     "question": "What action is performed to change the cooking side of the circular food item in the black pan?",
+     "answer": "The person uses a spatula to flip the food item over.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the competitor wearing blue gloves after the competitor in the white helmet delivers a high kick?",
+     "answer": "The competitor wearing blue gloves falls to the mat.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What unfurls on the pole towards the back of the boat?",
+     "answer": "A flag.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "How does the camera's framing of the boat and ocean change after the initial low-angle view?",
+     "answer": "The camera moves from a close, low-angle view to a wider, elevated perspective, showing more of the ocean and the boat's structure.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What two types of hair are being blow-dried concurrently after the woman begins styling the blonde hair?",
+     "answer": "Blonde and dark hair",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.24324324324324326,
+     "reward_v2": 1.7432432432432432
+    },
+    {
+     "question": "What object does the child use to stand taller at the kitchen sink?",
+     "answer": "A step stool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1456953642384106,
+     "reward_v2": 1.6456953642384107
+    },
+    {
+     "question": "After completing the initial pencil outlines on the canvas, what action does the artist perform to start applying color?",
+     "answer": "The artist uses a brush to apply dark green color to the trees.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.36666666666666664,
+     "reward_v2": 1.8666666666666667
+    },
+    {
+     "question": "How does the person prepare the white sneakers with yellowed soles before placing them on the outdoor chairs?",
+     "answer": "They apply a cleaning solution to the soles and then cover them with plastic wrap.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09014169430208017,
+     "reward_v2": 1.59014169430208
+    },
+    {
+     "question": "What type of scores are displayed immediately after all judges' Technical Merit scores are shown?",
+     "answer": "Artistic Expression scores",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3031718711581022,
+     "reward_v2": 1.8031718711581022
+    },
+    {
+     "question": "What happens to the skier wearing a blue jacket and light blue pants as they move down the snowy trail?",
+     "answer": "The skier in the blue jacket and light blue pants is seen moving down the snowy trail, navigating through the trees and occasionally interacting with others.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.22,
+     "reward_v2": 0.72
+    },
+    {
+     "question": "What happens to the child as they push the red lawnmower across the grass?",
+     "answer": "The child pushes the red lawnmower back and forth across the grass, showing effort and determination.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09,
+     "reward_v2": 0.59
+    },
+    {
+     "question": "What does the person with chest tattoos use to clean the nose after putting on both blue gloves?",
+     "answer": "A cotton swab.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.9,
+     "reward_v2": 2.4
+    },
+    {
+     "question": "What action does the person perform with the black helmet after it is seen in their hands?",
+     "answer": "They put it on their head and mount the scooter.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 0.7
+    },
+    {
+     "question": "After sectioning off the top layer of hair with a clip, what two actions does the person perform before blow-drying the bottom layer?",
+     "answer": "They apply heat protectant spray and use a round brush to smooth the hair.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.45,
+     "reward_v2": 1.95
+    },
+    {
+     "question": "What happens immediately after the player in green, wearing number 7, kicks the ball from a set piece towards the goal?",
+     "answer": "The ball enters the goal, and the player celebrates.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens to the person after they are seen waterskiing across the water?",
+     "answer": "They fall into the water and swim.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What instrument does the man in the orange shirt with a long beard begin to play on stage after other musicians have joined him?",
+     "answer": "A saxophone.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09166666666666666,
+     "reward_v2": 1.5916666666666666
+    },
+    {
+     "question": "What footwear does the second person, wearing a purple top and skirt, put on after approaching the orange cones?",
+     "answer": "Rollerblades",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What happens after the raft goes over the biggest drop in the river?",
+     "answer": "The raft continues to navigate the river downstream, paddling through turbulent waters.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.8333333333333334,
+     "reward_v2": 1.3333333333333335
+    },
+    {
+     "question": "After sitting on the floor with several hoops, what body part does the performer use to spin the hoops?",
+     "answer": "Her hands.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.1076923076923077,
+     "reward_v2": 0.6076923076923078
+    },
+    {
+     "question": "What does the person do with the red strap-like object retrieved from the small white table?",
+     "answer": "They use it to tie the dog's leash.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.56,
+     "reward_v2": 2.06
+    },
+    {
+     "question": "After stopping on the sidewalk, what does the person remove and then re-attach from the dog's head?",
+     "answer": "A face mask.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens after the official raises the starter pistol?",
+     "answer": "The runners begin to move forward, indicating the start of the race.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What food is the man primarily eating with his fork while seated at the table?",
+     "answer": "Scrambled eggs",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3157894653739617,
+     "reward_v2": 1.8157894653739617
+    },
+    {
+     "question": "After a person lowers the brindle puppy into the water-filled bathtub, what immediate actions does the puppy take?",
+     "answer": "The puppy paddles its legs and moves its body in the water.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2,
+     "reward_v2": 1.7
+    },
+    {
+     "question": "What is the first item a person removes from the kitchen sink?",
+     "answer": "A white mug.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.21200000000000005,
+     "reward_v2": 1.712
+    },
+    {
+     "question": "What does the woman in the light blue shirt hand to the sumo wrestler she was riding on?",
+     "answer": "A microphone.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What image briefly appears and disappears over the man wearing a Needham Fire shirt and NFD cap?",
+     "answer": "A memorial photo of a baby girl.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.19047619047619047,
+     "reward_v2": 1.6904761904761905
+    },
+    {
+     "question": "After the right hand lifts its fingers, what action does it perform next on the drum head?",
+     "answer": "It strikes the drum head with its palm.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "After the man in the orange and black scarf looks down towards his side, what object does he bring to his mouth?",
+     "answer": "A piece of food.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What action does the right knitting needle perform after 'Step 2' appears and before 'Step 3' appears?",
+     "answer": "It inserts the needle into the front loop of a stitch on the left needle and yarns over.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5142857142857142,
+     "reward_v2": 1.0142857142857142
+    },
+    {
+     "question": "After the right knitting needle pulls a new orange yarn loop through an existing stitch, what happens to the original stitch on the left needle?",
+     "answer": "The original stitch is removed and becomes a new, smaller loop on the right needle.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What red and yellow object is being cleaned with water after the person exits the garage?",
+     "answer": "A red and yellow ride-on toy car.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.2799999999999997,
+     "reward_v2": 1.7799999999999998
+    },
+    {
+     "question": "What happens immediately after the practitioner wearing the red chest protector performs a high kick towards their opponent?",
+     "answer": "The opponent falls to the ground.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person on rollerblades perform when approaching the stairs?",
+     "answer": "They rollerblade up the stairs.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.9090909090909091,
+     "reward_v2": 1.9090909090909092
+    },
+    {
+     "question": "How many musicians are playing the series of dark, barrel-shaped drums arranged in a row?",
+     "answer": "Three",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6,
+     "reward_v2": 2.1
+    },
+    {
+     "question": "What trick does the person in the blue shirt perform on the slackline?",
+     "answer": "He performs a backflip on the slackline.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3,
+     "reward_v2": 0.8
+    },
+    {
+     "question": "What is displayed on the screen that appears after the white ball enters the goal net?",
+     "answer": "A screen displaying match statistics and team information.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.1,
+     "reward_v2": 1.1
+    },
+    {
+     "question": "What does the person in the yellow shirt do after the motorcycle rider stops near the checkered flags?",
+     "answer": "The person in the yellow shirt approaches the motorcycle and makes adjustments to it.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.44155844155844154,
+     "reward_v2": 1.4415584415584415
+    },
+    {
+     "question": "What happens to Josh Harrington after he performs a trick on the red rail next to the stairs?",
+     "answer": "He falls off his bike and lands on the ground.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.75,
+     "reward_v2": 2.25
+    },
+    {
+     "question": "After the baby presses several keys on the left side of the keyboard, what does an adult hand do on the right side of the instrument?",
+     "answer": "An adult hand presses keys on the right side of the instrument.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.19166666666666668,
+     "reward_v2": 1.6916666666666667
+    },
+    {
+     "question": "What action do the players perform immediately after several colored dodgeballs are lined up on the court?",
+     "answer": "They begin to run and throw the balls at each other.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.358974358974359,
+     "reward_v2": 0.858974358974359
+    },
+    {
+     "question": "After moving away from the store display featuring clothing and accessories, what type of store aisle does the person first walk through, followed by what fresh food section?",
+     "answer": "They first walk through a general merchandise aisle, then enter a fresh food section with fruits and vegetables.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.6642382686950934,
+     "reward_v2": 1.6642382686950934
+    },
+    {
+     "question": "What emerges from the water after only a fin is visible?",
+     "answer": "A large, unusual fish.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.13333333333333333,
+     "reward_v2": 1.1333333333333333
+    },
+    {
+     "question": "After a group of children gather at the pool's starting blocks, what main action do they perform next?",
+     "answer": "They dive into the pool.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4810000000000009,
+     "reward_v2": 1.981000000000001
+    },
+    {
+     "question": "What item does the girl sitting on the edge of the pool put on her face?",
+     "answer": "Swimming goggles",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What specific tag team finisher is demonstrated for the wrestler Batista in the ring?",
+     "answer": "The Batista Bomb & RKO.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.35,
+     "reward_v2": 1.85
+    },
+    {
+     "question": "What type of vehicle approaches the large breaking wave after a surfer rides it?",
+     "answer": "A jet ski.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.65,
+     "reward_v2": 2.15
+    },
+    {
+     "question": "What does the person do after adjusting the black fanny pack while wearing a white top and jeans?",
+     "answer": "They take a selfie with their phone and then place the phone and fanny pack on a clothing rack.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.15,
+     "reward_v2": 1.65
+    },
+    {
+     "question": "What colors are the top and pole used by the athlete who performs the first successful pole vault?",
+     "answer": "The pole is yellow, and the top is yellow.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.25,
+     "reward_v2": 0.75
+    },
+    {
+     "question": "After applying toothpaste to his green toothbrush, what does the boy begin to do?",
+     "answer": "He begins to brush his teeth.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6071428571428571,
+     "reward_v2": 2.107142857142857
+    },
+    {
+     "question": "What does the boy in the white shirt do with the tube of toothpaste after picking up his toothbrush?",
+     "answer": "He applies toothpaste to his toothbrush.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.575,
+     "reward_v2": 2.075
+    },
+    {
+     "question": "After lifting the kite control bar and lines high above their head, what action does the person perform to get the kite into the air?",
+     "answer": "They run forward while holding the bar high.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4166666666666667,
+     "reward_v2": 1.9166666666666667
+    },
+    {
+     "question": "What action does the player in the red shirt perform immediately after the player in the blue shirt serves the ball?",
+     "answer": "The player in the red shirt hits the ball with a forehand shot.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What action does the person take immediately after experiencing a cut on their finger while working on the drawer?",
+     "answer": "She uses sandpaper to rub her finger.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What color swimsuit is the person wearing while riding the large wave on the surfboard?",
+     "answer": "Red",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5333333333333333,
+     "reward_v2": 2.033333333333333
+    },
+    {
+     "question": "What repeatedly happens to the player wearing a black jersey with white shoulder markings while attempting to play hockey?",
+     "answer": "He repeatedly falls or is knocked down.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.32857142857142857,
+     "reward_v2": 1.8285714285714285
+    },
+    {
+     "question": "What two eating utensils are primarily used to consume the food from the large black bowl?",
+     "answer": "Chopsticks and a spoon.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.25,
+     "reward_v2": 1.75
+    },
+    {
+     "question": "Identify the colors of the doll-shaped shakers used to season the salad, in the order they appear.",
+     "answer": "Black and red, then yellow and blue",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.425531914893617,
+     "reward_v2": 0.925531914893617
+    },
+    {
+     "question": "Who helps the child wearing a white shirt and bib to rake leaves into the blue pool?",
+     "answer": "An adult in a light-colored top and blue jeans.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.09,
+     "reward_v2": 1.59
+    },
+    {
+     "question": "What is worn on the hands of the man and woman after they demonstrate the basic rock, paper, scissors gestures with bare hands?",
+     "answer": "They are wearing fingerless gloves.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.5,
+     "reward_v2": 2.0
+    },
+    {
+     "question": "What kind of aerial maneuver does the person perform immediately after jumping off the trampoline?",
+     "answer": "A backflip.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What change in visual content is observable across the entire clip?",
+     "answer": "The video transitions to a black screen.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What does the person do on the window immediately after finishing cleaning an indoor section and stepping out onto the patio?",
+     "answer": "They begin cleaning the window from the outdoor perspective.",
+     "acc_v1_recorded": 1.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.36114016736401683,
+     "reward_v2": 1.3611401673640169
+    },
+    {
+     "question": "What happens to the arm of the man in the black shirt after it is nearly pinned down by his opponent during their arm wrestling match?",
+     "answer": "The arm is released and the man stands up.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.3849114703618167,
+     "reward_v2": 0.8849114703618167
+    },
+    {
+     "question": "What happens to the runner wearing bib 258 as she is running on the muddy ground?",
+     "answer": "She loses her footing and falls, sliding on the mud.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "After the man in the white shirt kicks the yellow ball high into the air, what happens to it?",
+     "answer": "The ball flies through the sky and eventually disappears from view.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is visible inside the framed picture that a woman holds up while being interviewed?",
+     "answer": "It shows the interior of a white van with yellow lining.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.4,
+     "reward_v2": 1.9
+    },
+    {
+     "question": "What activity is the Boston Terrier performing after the small, light brown dog runs through the grass?",
+     "answer": "It is playing with a frisbee.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What tool does the person use to spread the white cleaning powder after it's sprinkled in the sink?",
+     "answer": "A sponge.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.6111111111111112,
+     "reward_v2": 2.111111111111111
+    },
+    {
+     "question": "What action does the scuba diver perform after reaching the submerged vehicle?",
+     "answer": "They move away from the vehicle and continue exploring the underwater environment.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.21875,
+     "reward_v2": 0.71875
+    },
+    {
+     "question": "After the diver moves further inside from the large rectangular opening, what animal swims into view through it?",
+     "answer": "A large, dark-colored shark.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What happens to the red, green, and blue kite after the man in the striped shirt first attempts to launch it?",
+     "answer": "It successfully takes flight and is flown by the man in the striped shirt.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.23,
+     "reward_v2": 1.23
+    },
+    {
+     "question": "After the person brings the cup towards their mouth and tilts it for a drink, what is visible inside the cup when it is lowered again?",
+     "answer": "It contains a light brown liquid, likely coffee or tea.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What item does a hand interact with after being visible near red coffee containers?",
+     "answer": "A coffee maker.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What is placed on the mannequin that was previously wearing a black hooded garment, after the hooded person inspects it?",
+     "answer": "A red and black patterned garment.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    },
+    {
+     "question": "What is done with the red long-sleeved top and blue jeans after they are laid out together on the bed?",
+     "answer": "The outfit is photographed and then folded and placed back into the red shopping bag.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.5,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.0
+    },
+    {
+     "question": "What does the camera capture after it exits the store where a 'CLOSE' sign is prominently displayed on the glass door?",
+     "answer": "It captures the camera exiting the store and moving along a covered walkway.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.23333333333333334,
+     "reward_v2": 0.7333333333333334
+    },
+    {
+     "question": "What type of handheld device is used to groom the red couch?",
+     "answer": "A handheld vacuum cleaner.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What action is performed on the window located next to the counter displaying cleaning sprays and a coffee maker?",
+     "answer": "The window is opened.",
+     "acc_v1_recorded": 0.0,
+     "acc_v2": 0.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 0.5
+    },
+    {
+     "question": "What small, light-colored, roundish items are released onto the dark floor by the person in the foreground?",
+     "answer": "Small, light-colored, roundish items, likely coins, are released onto the dark floor.",
+     "acc_v1_recorded": 0.5,
+     "acc_v2": 1.0,
+     "format_score": 0.5,
+     "evidence_iou": 0.0,
+     "reward_v2": 1.5
+    }
+   ]
+  }
+ },
+ "mean_of_checkpoints": {
+  "acc_v1_recorded": 0.5307017543859649,
+  "acc_v2": 0.6023391812865496,
+  "format_score": 0.5,
+  "evidence_iou": 0.2166626600468362,
+  "reward_v2": 1.319001841333386
+ }
+}

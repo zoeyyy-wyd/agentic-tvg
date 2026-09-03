@@ -122,9 +122,8 @@ python merge_adapter.py                  # fold LoRA -> results/sft-mix/merged
 # GRPO round 2 (defaults: grpo_v2, compute_score_qa2, JUDGE_V=2, constant lr;
 # two-stage curriculum per GRPO2_PLAN §3e/§4):
 EPOCHS=1 bash run_grpo.sh                                  # stage 1, 133 steps ~30 h
-python data_prep/filter_mastered.py     --rollouts results/grpo-v2/rollouts                    # drop mastered prompts; prints stage-2 line
-mv results/grpo-v2/ckpt/global_step_133/data.pt{,.bak}     # REQUIRED before the resume
-EPOCHS=1 TOTAL_STEPS=<printed> TRAIN_FILE=data/processed/rl_train_ep2.parquet     bash run_grpo.sh                                       # stage 2, ~98 steps ~22 h
+python data_prep/filter_mastered.py --rollouts results/grpo-v2/rollouts   # drop mastered prompts (visit acc >= 0.9)
+bash run_grpo_stage2.sh                  # stage 2 (~106 steps ~22 h); derives EPOCHS/TOTAL_STEPS + data.pt surgery itself
 
 bash run_grpo.sh trainer.val_only=True   # the evaluator (any stage, any model via MODEL_PATH=)
 python data_prep/extract_rft.py          # RFT set from grpo-v2 rollouts (prefix rft_v2)

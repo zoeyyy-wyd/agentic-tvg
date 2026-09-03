@@ -106,6 +106,13 @@ instrument version.
 
 **v2 baselines already measured** (114-row rl_val, v1 in parens):
 SFT 0.5395 (0.4561) · **GRPO 0.5965 (0.5044)** · RFT 0.5702 (0.5044).
+Extended 2026-09-03: round-1's closing THREE checkpoints (240/260/267)
+re-judged on v2 and re-scored under the qa2 reward —
+`data_prep/rescore_rollouts_v2.py`, artifact
+`results/grpo-vanilla/v2_rescore.json`: acc_v2 0.6228 / 0.5921 / 0.5921,
+**3-checkpoint mean 0.6023**, reward_v2 mean 1.319. (267's fresh re-judge
+0.5921 vs the documented single-point 0.5965 = −0.4 pt sampling drift —
+the reason the endgame compares 3-point means.)
 
 What v2 buys, precisely: **ranking correctness, not gradient magnitude.**
 The 0.5 refuge was noise in both directions, so mid-difficulty groups were
@@ -214,12 +221,15 @@ well —
 | 0.5–0.75 | 245 | 15.1% | 5.3% |
 | < 0.5 | 523 | ~0% | — |
 
-Cutting at **visit acc ≥ 0.75** drops 26.4% of prompts and would have cut
-epoch-2 mastered groups 23.1% → 4.9% (zero-variance 16.7% → 8.6%). The hard
-end is kept — all-wrong groups still carry iou/partial-credit gradient.
-Threshold 0.75 is the default in `data_prep/filter_mastered.py`; the cut is
-computed from **stage 1's own rollouts** (v2-judged), never from round-1
-numbers (v1 scale — the table above only shows the predictor works).
+**Threshold: visit acc ≥ 0.9** (user call 2026-09-03, revising the drafted
+0.75): the mid-band 0.75–0.9 still carries within-group variance (see
+`results/grpo-v2/per_question_analysis.png`, middle panel), so only the
+≥0.9 spike — 16/16-agreement territory — is dropped. On stage 1 that cut
+217 of 1,064 questions; kept 851 (+4 unvisited) → 106 stage-2 steps. The
+hard end is kept — all-wrong groups still carry iou/partial-credit
+gradient. The cut is computed from **stage 1's own rollouts** (v2-judged),
+never from v1 numbers (the calibration table above only shows the
+predictor works).
 
 Mechanics (all verified against verl 0.9.0 source):
 
@@ -234,11 +244,17 @@ Mechanics (all verified against verl 0.9.0 source):
    the NEW loader's length (133 % ~98 ≠ 0), so without this it loads a
    133-batch state into a ~98-batch loader. Removing data.pt hits the clean
    start-from-scratch branch.
-4. Stage 2, same `EXP_NAME` (resume_mode=auto picks up the checkpoint):
-   `EPOCHS=1 TOTAL_STEPS=<133 + kept//8> TRAIN_FILE=.../rl_train_ep2.parquet
-   bash run_grpo.sh`. The explicit TOTAL_STEPS is required — the derived
-   total (~98) is below the resumed global_step. ~231 steps total vs
-   round 1's 267.
+4. Stage 2: **`bash run_grpo_stage2.sh`** — the wrapper derives everything
+   from disk state (rows in the ep2 parquet → steps/epoch; registered
+   checkpoint step → EPOCHS = step//steps_per_epoch + 1 and TOTAL_STEPS =
+   step + steps_per_epoch) and does the data.pt surgery itself.
+   `DRY=1 bash run_grpo_stage2.sh` prints the derived launch without
+   running. Why EPOCHS must NOT be 1: verl computes `current_epoch =
+   global_steps // len(new_dataloader)` on resume and loops
+   `range(current_epoch, total_epochs)`; with the smaller pool the
+   quotient is ≥1, so EPOCHS=1 makes the loop empty — the run exits
+   cleanly after val_before_train with zero training steps (measured
+   2026-09-03, cost one launch).
 
 What carries across the seam: adapter + optimizer state (resume), and the
 KL anchor — `ref_in_actor` references the base minus adapter, so both
@@ -309,9 +325,12 @@ mitigations are unnecessary.
 Targets (val, v2-judge scale, vs the §3a baselines; n=114 → SE ±4.7 pts,
 so compare 3-checkpoint means, never single readings):
 
-- **Primary: v2 acc above grpo-vanilla's 0.5965 by > 1 SE** — i.e. a
-  3-checkpoint mean ≥ ~0.64. Expected mechanism: cleaner ranking in
-  mid-difficulty groups (judge) + signal kept alive in stage 2
+- **Primary: grpo_v2's closing 3-checkpoint mean acc_v2 above
+  grpo-vanilla's measured 3-checkpoint mean 0.6023** (rescored 2026-09-03,
+  `results/grpo-vanilla/v2_rescore.json`) **by a clear margin (~1 SE,
+  ±4.7 single-point)** — i.e. ≥ ~0.65 for a clean win; matching ~0.60 is a
+  wash. reward_v2 comparison anchor: 1.319. Expected mechanism: cleaner
+  ranking in mid-difficulty groups (judge) + signal kept alive in stage 2
   (curriculum).
 - **Test-during ladder**: val auto-fires every 20 steps (full 114 rows);
   the step-0 val and the step-20/40 reads (§4.3) are the first scheduled

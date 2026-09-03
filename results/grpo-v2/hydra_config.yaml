@@ -459,7 +459,7 @@ actor_rollout_ref:
 data:
   tokenizer: null
   use_shm: false
-  train_files: /home/yw4636/agentic-tvg/data/processed/rl_train.parquet
+  train_files: /home/yw4636/agentic-tvg/data/processed/rl_train_ep2.parquet
   val_files: /home/yw4636/agentic-tvg/data/processed/rl_val.parquet
   train_max_samples: -1
   val_max_samples: -1
@@ -895,8 +895,8 @@ transfer_queue:
       device_name: ''
 trainer:
   balance_batch: true
-  total_epochs: 1
-  total_training_steps: null
+  total_epochs: 2
+  total_training_steps: 239
   project_name: agentic-tvg
   experiment_name: grpo_v2
   logger:
