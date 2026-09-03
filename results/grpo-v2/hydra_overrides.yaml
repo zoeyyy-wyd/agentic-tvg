@@ -73,3 +73,4 @@
 - trainer.test_freq=20
 - trainer.total_epochs=2
 - trainer.total_training_steps=239
+- trainer.val_before_train=False

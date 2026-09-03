@@ -70,7 +70,11 @@ from agentic_tvg.answer_match import normalize
 JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "claude-sonnet-5")
 _CACHE_PATH = Path(os.environ.get("JUDGE_CACHE", "data/processed/judge_cache_v2.jsonl"))
 _TIMEOUT_S = float(os.environ.get("JUDGE_TIMEOUT", "30"))
-_RETRIES = 3
+# 6 retries, exponential backoff to 45s (2026-09-03: a sonnet 529-Overloaded
+# burst outlasted 3 quick retries and JudgeUnavailable stopped the run at step
+# ~150 -- correct behaviour, wrong patience; ~1.5 min of cumulative backoff
+# rides out typical overload bursts). Env-overridable for tests.
+_RETRIES = int(os.environ.get("JUDGE_RETRIES", "6"))
 
 _SYSTEM = ("You grade video question answering. Compare briefly, then end with a line: "
            "VERDICT: FULL or VERDICT: PARTIAL or VERDICT: INCORRECT")
@@ -262,7 +266,7 @@ def judge_answer(question: str, gt_text: str, answer: str) -> float | None:
                 raise JudgeUnavailable(
                     f"{JUDGE_MODEL} failed {_RETRIES}x ({type(exc).__name__}: {exc})") from exc
             last_failure = f"{type(exc).__name__}: {exc}"
-        time.sleep(1.5 * (attempt + 1))
+        time.sleep(min(2.0 * 2 ** attempt, 45.0))
     if verdict is None:
         raise JudgeUnavailable(
             f"{JUDGE_MODEL} gave no parseable verdict in {_RETRIES} attempts ({last_failure})")

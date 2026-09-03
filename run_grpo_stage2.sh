@@ -45,14 +45,26 @@ PY
 )
 N2=$(( ROWS / TRAIN_BS ))
 EPOCHS=$(( STEP / N2 + 1 ))
-TOTAL=$(( STEP + N2 ))
 
-if [ -f "${CKPT}/data.pt" ]; then
-    mv "${CKPT}/data.pt" "${CKPT}/data.pt.bak"
-    echo "[stage2] dataloader state moved aside: ${CKPT}/data.pt -> .bak"
+# The stage-2 horizon is anchored to the BOUNDARY step (where the pool was
+# swapped), not to whatever checkpoint we happen to resume from -- a crash
+# resume from, say, 140 must still end at boundary+N2, and its data.pt now
+# belongs to the NEW pool and must NOT be moved aside. First launch records
+# the boundary and does the surgery; later launches reuse it (2026-09-03: the
+# naive STEP+N2 would have overshot and, worse, ended by epoch exhaustion
+# before is_last_step -- no final save/val).
+BOUNDARY_FILE="${RESULT_DIR}/stage2_boundary.txt"
+if [ ! -f "${BOUNDARY_FILE}" ]; then
+    if [ -f "${CKPT}/data.pt" ]; then
+        mv "${CKPT}/data.pt" "${CKPT}/data.pt.bak"
+        echo "[stage2] boundary launch: dataloader state moved aside (${CKPT}/data.pt -> .bak)"
+    fi
+    echo "${STEP}" > "${BOUNDARY_FILE}"
 fi
+BOUNDARY=$(tr -dc '0-9' < "${BOUNDARY_FILE}")
+TOTAL=$(( BOUNDARY + N2 ))
 
-echo "[stage2] resume past step ${STEP} | pool ${ROWS} rows -> ${N2} steps/epoch | EPOCHS=${EPOCHS} TOTAL_STEPS=${TOTAL}"
+echo "[stage2] resume past step ${STEP} (boundary ${BOUNDARY}) | pool ${ROWS} rows -> ${N2} steps/epoch | EPOCHS=${EPOCHS} TOTAL_STEPS=${TOTAL}"
 [ "${DRY:-0}" = "1" ] && exit 0
 # val_before_train off for resumes (user call 2026-09-03): the step-<N> val was
 # already produced by the finishing stage, re-running it buys ~20 min of GPU
