@@ -7,7 +7,10 @@ sampled trajectory with the flattened prompt (`input`), the flattened
 generation incl. tool responses (`output`), and the reward breakdown. The
 recipe, per README:
 
-  1. keep score > --min-score (default 1.5; in practice acc=1 traces);
+  1. keep score > --min-score AND acc >= --min-acc (default 1.5 / 1.0. On the
+     v1 reward scale score>1.5 alone implied acc=1; under the round-2 scale
+     (iou weight 1.0) a PARTIAL answer with good grounding can exceed 1.5,
+     so the acc gate is explicit since 2026-09-04);
   2. per question, up to --traces-per-q answer-distinct traces
      (render_traces.pick_traces), preferring late steps -- traces are sorted
      by (step desc, score desc) before picking, so K=16 x 2 epochs of easy
@@ -186,6 +189,8 @@ def main() -> None:
     ap.add_argument("--rl-train", type=Path, default=Path("data/processed/rl_train.parquet"))
     ap.add_argument("--out", type=Path, default=Path("data/processed"))
     ap.add_argument("--min-score", type=float, default=1.5)
+    ap.add_argument("--min-acc", type=float, default=1.0,
+                    help="judged-correctness floor; 1.0 = FULL only (see docstring)")
     ap.add_argument("--traces-per-q", type=int, default=3)
     ap.add_argument("--review-score", type=float, default=1.8, help="hand-read sample threshold")
     ap.add_argument("--review-n", type=int, default=40)
@@ -218,7 +223,7 @@ def main() -> None:
             for line in f:
                 d = json.loads(line)
                 n_rows += 1
-                if float(d["score"]) <= args.min_score:
+                if float(d["score"]) <= args.min_score or float(d.get("acc", -1)) < args.min_acc:
                     drop["low_score"] += 1
                     continue
                 t, why = parse_rollout(d)

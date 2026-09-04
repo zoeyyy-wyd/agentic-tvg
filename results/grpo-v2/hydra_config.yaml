@@ -895,7 +895,7 @@ transfer_queue:
       device_name: ''
 trainer:
   balance_batch: true
-  total_epochs: 2
+  total_epochs: 3
   total_training_steps: 239
   project_name: agentic-tvg
   experiment_name: grpo_v2

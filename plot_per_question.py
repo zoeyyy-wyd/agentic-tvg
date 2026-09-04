@@ -115,13 +115,23 @@ def main() -> None:
 
     # --- 3. saturation, v2 vs v1 ------------------------------------------
     ax = axes[2]
-    x1, y1 = mastered_by_band(args.v1_rollouts,
-                              [(1, 40), (40, 80), (80, 120), (120, 160), (160, 200), (200, 240), (240, 268)])
-    x2, y2 = mastered_by_band(args.v2_rollouts, [(1, 40), (40, 80), (80, 120), (120, 134)])
+    def bands_for(g, width=40):
+        steps = sorted(int(Path(f).stem) for f in glob.glob(g))
+        if not steps:
+            return []
+        out = [(lo, lo + width) for lo in range(1, steps[-1] + 1, width)]
+        out[0] = (1, out[0][1])
+        return out
+    x1, y1 = mastered_by_band(args.v1_rollouts, bands_for(args.v1_rollouts))
+    x2, y2 = mastered_by_band(args.v2_rollouts, bands_for(args.v2_rollouts))
     ax.plot(x1, y1, color=DROP, lw=2, marker="o", ms=5)
     ax.plot(x2, y2, color=KEPT, lw=2, marker="o", ms=5)
     ax.text(x1[-1] - 6, y1[-1] - 2.6, "v1 (grpo-vanilla, 267 steps)", color=DROP, fontsize=9, ha="right")
-    ax.text(x2[-1] + 5, y2[-1], "v2 stage 1", color=KEPT, fontsize=9, va="center")
+    ax.text(x2[-1] + 5, y2[-1], "v2", color=KEPT, fontsize=9, va="center")
+    if len(x2) > 3:
+        ax.annotate("curriculum cut (pool swapped)", xy=(137, y2[3] if len(y2) > 3 else y2[-1]),
+                    xytext=(150, 8), fontsize=8, color=MUT,
+                    arrowprops=dict(arrowstyle="->", color=MUT, lw=1))
     ax.axhline(30, color=MUT, lw=0.8, ls=":")
     ax.text(3, 30.6, "~30% mastered", fontsize=8, color=MUT)
     ax.set_xlabel("training step")
