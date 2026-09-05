@@ -191,6 +191,8 @@ def main() -> None:
     ap.add_argument("--min-score", type=float, default=1.5)
     ap.add_argument("--min-acc", type=float, default=1.0,
                     help="judged-correctness floor; 1.0 = FULL only (see docstring)")
+    ap.add_argument("--min-iou", type=float, default=0.0,
+                    help="evidence-IoU floor; 0.3 = the paper's dual criterion (correct AND grounded)")
     ap.add_argument("--traces-per-q", type=int, default=3)
     ap.add_argument("--review-score", type=float, default=1.8, help="hand-read sample threshold")
     ap.add_argument("--review-n", type=int, default=40)
@@ -223,7 +225,8 @@ def main() -> None:
             for line in f:
                 d = json.loads(line)
                 n_rows += 1
-                if float(d["score"]) <= args.min_score or float(d.get("acc", -1)) < args.min_acc:
+                if (float(d["score"]) <= args.min_score or float(d.get("acc", -1)) < args.min_acc
+                        or float(d.get("evidence_iou", -1)) < args.min_iou):
                     drop["low_score"] += 1
                     continue
                 t, why = parse_rollout(d)

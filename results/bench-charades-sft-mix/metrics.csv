@@ -1,0 +1,2 @@
+step,val-aux/charades_sta/answered/mean@1,val-aux/charades_sta/evidence_iou/mean@1,val-aux/charades_sta/format_score/mean@1,val-aux/charades_sta/judge_used/mean@1,val-aux/charades_sta/num_tool_calls/mean@1,val-aux/charades_sta/reward/mean@1,val-aux/charades_sta/score/mean@1,val-aux/num_turns/max,val-aux/num_turns/mean,val-aux/num_turns/min,val-core/charades_sta/acc/mean@1
+0,1,0.379399,0.5,0,1,0.881905,0.881905,4,4,4,0.00250627

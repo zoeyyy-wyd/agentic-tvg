@@ -55,8 +55,8 @@ load_dotenv() {
 load_dotenv "${ENV_FILE}"
 
 # ============================ edit here ============================
-REPO_ID="zoeyyy-wyd/agentic-tvg-grpo-v2"                   # target repo; auto-created private if missing
-LOCAL_PATH="./results/grpo-v2"                # directory or file to upload
+REPO_ID="zoeyyy-wyd/agentic-tvg-rft-v2"                   # target repo; auto-created private if missing
+LOCAL_PATH="./results/rft-v2b"                # directory or file to upload
 # ===============================================================
 
 # The whole ckpt/ dir, not just global_step_N: verl reads
