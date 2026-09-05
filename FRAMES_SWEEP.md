@@ -152,4 +152,4 @@ The raw smoke outputs (`results/smoke*`, `results/grpo-smoke*`, `results/qa-smok
 what survives of them. The offload A/B that ran as `grpo-smoke-opt` is written up
 in `GRPO_NOTES.md` §3d (offload is not where the RAM goes). `results/memtest*`
 is kept — GRPO_NOTES cites it directly. Production-run analysis lives in
-`GRPO_RESULTS.md`.
+`GRPO_v1_RESULTS.md`.

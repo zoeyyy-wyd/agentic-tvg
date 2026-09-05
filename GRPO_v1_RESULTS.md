@@ -1,4 +1,6 @@
-# GRPO Results — `grpo-vanilla` (2026-08-30)
+# GRPO v1 Results — `grpo-vanilla` (2026-08-30)
+
+> Sequel: the v2 recipe's results live in `V2_RESULTS.md` (2026-09-05).
 
 Analysis of the production GRPO run (`run_grpo.sh`, config rationale in
 `GRPO_NOTES.md`, budgets in `FRAMES_SWEEP.md` §5). §§1–7 were written at step

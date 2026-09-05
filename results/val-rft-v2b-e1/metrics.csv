@@ -1,0 +1,2 @@
+step,val-aux/longvt_longvt-val/answered/mean@1,val-aux/longvt_longvt-val/evidence_iou/mean@1,val-aux/longvt_longvt-val/format_score/mean@1,val-aux/longvt_longvt-val/judge_used/mean@1,val-aux/longvt_longvt-val/num_tool_calls/mean@1,val-aux/longvt_longvt-val/reward/mean@1,val-aux/longvt_longvt-val/score/mean@1,val-aux/num_turns/max,val-aux/num_turns/mean,val-aux/num_turns/min,val-core/longvt_longvt-val/acc/mean@1
+0,1,0.228819,0.5,1,1,1.34285,1.34285,4,4,4,0.614035

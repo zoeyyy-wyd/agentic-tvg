@@ -11,10 +11,11 @@ code path, so numbers are comparable across stages by construction.
 
 Docs: `DATA.md` (data provenance + processing, incl. the rft_9397 bug record) ·
 `GRPO_NOTES.md` (why the RL config is what it is, incl. the OOM case file and
-the silent-config-key lessons) · `GRPO_RESULTS.md` (round-1 forensics, incl.
+the silent-config-key lessons) · `GRPO_v1_RESULTS.md` (round-1 forensics, incl.
 the pool-saturation analysis) · `GRPO2_PLAN.md` (**the current plan**: round 2
 = judge v2 + epoch-boundary curriculum + constant lr) · `V2_PLAN.md`
 (superseded; post-mortem of the abandoned reflection-injection route) ·
+`V2_RESULTS.md` (**the v2 results & analysis — start here for outcomes**) ·
 `env_setup/ENVIRONMENT.md` (conda env `verl`) · `results/*/README.md` (runs).
 
 ## Reward
@@ -37,7 +38,7 @@ round 1 (compute_score_qa, frozen):        R = 0.5·format_ok + R_acc + 0.5·IoU
   itself, and is used by tests only. Credits come from console.anthropic.com.
 - **R_time** is fully programmatic: best IoU between any `crop_video` call
   and the evidence window; no call → 0. The 1.0 weight is measured to be
-  near-inert on within-group ranking (GRPO_RESULTS §4) — it decides whether
+  near-inert on within-group ranking (GRPO_v1_RESULTS §4) — it decides whether
   grounding may outrank one acc tier, nothing more; no iou target rests on it.
 
 ## Layout
@@ -70,9 +71,11 @@ tests/  env_setup/
 |---|---|
 | Data | 1,958 SFT rows · 1,068 RL train · 114 RL val (`DATA.md`) — **regenerate after the 2026-09-01 machine wipe** (`prepare_data.sh`; only the committed repo survived) |
 | SFT | **done** — val/loss 1.124 → 0.938, ~2 h; `results/sft-mix/merged` being restored from the Hub |
-| GRPO round 1 | **done** — `grpo-vanilla`, 267 steps: v2 acc 0.456 → **0.5965**, iou plateaued ~0.21, tool calls ≡ 1; plateau cause = pool saturation (GRPO_RESULTS §4) |
+| GRPO round 1 | **done** — `grpo-vanilla`, 267 steps: v2 acc 0.456 → **0.5965**, iou plateaued ~0.21, tool calls ≡ 1; plateau cause = pool saturation (GRPO_v1_RESULTS §4) |
 | RFT round 1 | **done and neutral** — v2 acc 0.5702 vs GRPO's 0.5965, iou 0.2206, tool calls ≡ 1 (`results/val-rft/analysis.md`); stage 3 earns nothing on round-1 rollouts |
-| GRPO round 2 | **next** — `grpo_v2` per `GRPO2_PLAN.md`: judge v2 + epoch-boundary curriculum + constant lr, from the same SFT model |
+| GRPO round 2 | **done** (2026-09-04) — `grpo_v2`: closing 3-ckpt mean acc **0.6214** (+1.9 vs v1's 0.6023), iou 0.254 breaking v1's 0.21 plateau, in 237 steps vs v1's 267. **Final model: `results/grpo-v2/merged`** |
+| RFT round 2 | **done, neutral ×5** — best variant (paper dual criterion, lr 2e-5) ties grpo_v2; see V2_RESULTS §5 for the LongVT reconciliation |
+| External probe | Charades-STA zero-shot grounding: SFT→GRPO **+15.1 pt R@0.5** (6 SE, n=399) — the iou gain transfers out of domain |
 
 Val accuracies above are the v2 judge scale (SFT 0.5395 · GRPO 0.5965 ·
 RFT 0.5702); the v1-scale history (0.4561/0.5044/0.5044) is frozen with

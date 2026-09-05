@@ -352,8 +352,11 @@ Built by `data_prep/extract_rft.py`. The funnel below is the ROUND-1 build
 (outputs `rft_*.parquet`, trained as `results/rft`, outcome neutral —
 README "State"). Since 2026-09-01 the script defaults to round 2's inputs
 and outputs: `--rollouts results/grpo-v2/rollouts`, `--prefix rft_v2` — a
-v2 build cannot overwrite these round-1 files. All numbers below measured
-on the round-1 build:
+v2 build cannot overwrite these round-1 files. Two v2 builds exist:
+`rft_v2_*` (score>1.5 + acc=1 gate; 2,633 train) and `rft_v2b_*` (the
+paper's dual criterion acc=1 AND iou≥0.3, ≤4/question; 835 questions →
+2,872 train / 52 val — the shipped RFT ablation, V2_RESULTS §5). All
+numbers below measured on the round-1 build:
 
 ```
 34,048 trajectories (266 step files × 128 rows: batch 8 prompts × K=16;

@@ -6,7 +6,7 @@ rollouts. A prompt whose visit came back with mean acc >= --threshold is very
 likely to be pure saturation next epoch -- calibrated on round 1, where each
 prompt got one visit per epoch: a >= 0.875 epoch-1 visit was mastered again in
 epoch 2 85% of the time (52% with literally zero acc variance), and a
-0.75-0.875 visit 57% of the time (GRPO_RESULTS §4). Default 0.9 (user call
+0.75-0.875 visit 57% of the time (GRPO_v1_RESULTS §4). Default 0.9 (user call
 2026-09-03: keep the 0.75-0.9 band -- its groups still carry variance; only
 the >=0.9 spike is dead weight). Launch stage 2 with run_grpo_stage2.sh,
 which derives EPOCHS/TOTAL_STEPS from disk state.

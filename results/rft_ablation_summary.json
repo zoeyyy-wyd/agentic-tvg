@@ -1,0 +1,58 @@
+{
+ "scale": "judge v2 + compute_score_qa2; rl_val n=114; charades n=399 (judge off)",
+ "grpo_v2_closing_3mean": {
+  "acc": 0.6214,
+  "evidence_iou": 0.254,
+  "reward": 1.375
+ },
+ "internal_val": {
+  "rft_v2": {
+   "n": 114,
+   "acc": 0.5833,
+   "evidence_iou": 0.238,
+   "score": 1.317
+  },
+  "rft_v2b_2ep": {
+   "n": 114,
+   "acc": 0.6184,
+   "evidence_iou": 0.2369,
+   "score": 1.3553
+  },
+  "rft_v2b_e1_1ep": {
+   "n": 114,
+   "acc": 0.614,
+   "evidence_iou": 0.2288,
+   "score": 1.3429
+  }
+ },
+ "charades_probe": {
+  "sft_mix": {
+   "n": 399,
+   "mean_iou": 0.3794,
+   "R@0.3": 56.9,
+   "R@0.5": 37.3,
+   "R@0.7": 17.3
+  },
+  "grpo_v2": {
+   "n": 399,
+   "mean_iou": 0.4822,
+   "R@0.3": 71.7,
+   "R@0.5": 52.4,
+   "R@0.7": 28.6
+  },
+  "rft_v2b_2ep": {
+   "n": 399,
+   "mean_iou": 0.4746,
+   "R@0.3": 70.7,
+   "R@0.5": 46.6,
+   "R@0.7": 26.6
+  },
+  "rft_v2b_e1_1ep": {
+   "n": 399,
+   "mean_iou": 0.4754,
+   "R@0.3": 72.4,
+   "R@0.5": 49.9,
+   "R@0.7": 25.3
+  }
+ }
+}

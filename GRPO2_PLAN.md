@@ -1,9 +1,17 @@
 # GRPO Round 2 Plan — `grpo_v2` (2026-09-01; rewritten same day after the group-level analysis, all §3 changes implemented)
 
+**OUTCOME (2026-09-05, full results in `V2_RESULTS.md`):** ran as designed.
+Primary criterion: closing 3-mean acc 0.6214 vs baseline 0.6023 — **positive
+(+1.9 pt) but short of the 1-SE clean-win bar**. The observable-only lines
+overdelivered: evidence_iou 0.254 (terminal 0.269) broke v1's 0.21 plateau
+and transferred externally (Charades R@0.5 +15.1 vs SFT). Curriculum and
+saturation behaved as §3e predicted; RFT stayed neutral (×5). This file is
+now a historical design record — read V2_RESULTS.md for what happened.
+
 Design for the second GRPO run: **same start model as round 1
 (`results/sft-mix/merged`), judge v2 as the one real reward change, an
 epoch-boundary curriculum against pool saturation, constant lr as hygiene.**
-Evidence base: `GRPO_RESULTS.md` (round-1 forensics; its §4 group-level
+Evidence base: `GRPO_v1_RESULTS.md` (round-1 forensics; its §4 group-level
 saturation analysis, added 2026-09-01, is what reshaped this plan) and
 `GRPO_NOTES.md` (mechanics). Two earlier routes were measured and dropped —
 their post-mortems live where the evidence is:
@@ -14,7 +22,7 @@ their post-mortems live where the evidence is:
   supply, and the RL pool's ≤302s videos make multi-crop unprofitable anyway.
 - **"the plateau was the cosine lr"** (this file's first §3c): withdrawn.
   Learning speed vs lr is non-monotonic across round 1's phases and the
-  plateau tracks pool saturation instead (GRPO_RESULTS §4).
+  plateau tracks pool saturation instead (GRPO_v1_RESULTS §4).
 
 ## 1. What round 1 established
 
@@ -26,7 +34,7 @@ converged to exactly one crop per trajectory (cap allows 3).
   (mean acc ≥ 0.9 over the 16 rollouts) grow 10.9% → 29.5% across the run;
   groups with zero acc variance 10.3% → 21.4%; within-group reward spread
   −20%. The all-wrong share never moves (~4–5%) — easy prompts get used up,
-  hard ones stay. Full trend + method: GRPO_RESULTS §4 ("The pool
+  hard ones stay. Full trend + method: GRPO_v1_RESULTS §4 ("The pool
   saturates"), reproduced by `data_prep/analyze_groups.py --signal`.
   DATA.md §3 predicted exactly this failure mode for the 1,068-prompt pool.
 - **The judge leaked half-credit.** The 2026-09-01 full-set audit (opus
@@ -68,7 +76,7 @@ GRPO_NOTES §4; RAM ceiling rules out larger batch anyway).
 
 Scope note: this section rules lr out as the *oscillation* driver. It says
 nothing about the plateau — that attribution question is settled separately
-by the phase-slope + saturation measurements in GRPO_RESULTS §4 (also not
+by the phase-slope + saturation measurements in GRPO_v1_RESULTS §4 (also not
 lr). "Raise the lr" is contraindicated by the same table: round 1's
 highest-lr phase was its slowest-learning phase. A 30-step probe recipe for
 a higher-lr cosine exists in the session notes if that is ever revisited;
@@ -84,7 +92,7 @@ The start model is shared with round 1, so round 1's +9 pt is inherited,
 not re-earned.
 
 Effect sizes, measured by re-scoring round 1's own 34,048 trajectories
-(GRPO_RESULTS §4 "Pre-flight"): judge v2 reorders within-group advantage at
+(GRPO_v1_RESULTS §4 "Pre-flight"): judge v2 reorders within-group advantage at
 Spearman 0.874 / 22.8% of groups change their best trajectory; the iou
 re-weight 0.992 / 3.1%. **Round 2 is a judge round**; the curriculum's job
 is to keep the signal alive long enough for that to matter.
@@ -159,7 +167,7 @@ Two things the first draft asked for are deliberately absent:
 - **The multi-crop shaping term**: dropped with its enabler (§3d). Round 1
   sampled 22 multi-crop trajectories in 34,048, so it would be ≡ 0.
 
-On the weight itself, measured (GRPO_RESULTS §4): near-inert — within-group
+On the weight itself, measured (GRPO_v1_RESULTS §4): near-inert — within-group
 advantage Spearman 0.992, 3.1% of group winners change, and **inside an
 acc-tied group any positive weight yields the identical ranking**
 (scale-invariance; 0/1,860 tie-break flips across 0.5…5.0). What 1.0 buys
